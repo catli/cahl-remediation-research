@@ -47,7 +47,7 @@ def write_file(file_name, data_array):
     print(path)
     open_file = open(path, "w")
     with open_file:
-        csvwriter = csv.writer(open_file, delimiter = '\t')
+        csvwriter = csv.writer(open_file, delimiter = ',')
         csvwriter.writerows(data_array)
         
 def write_array(file_name, data_array):
