@@ -63,14 +63,62 @@ def read_learning_similarity_data(file_name):
 
 
 
-def check_model_accuracy(prerequisite, model_matches):
-    # [TODO]
+def check_model_accuracy(prerequisites, model_matches):
+    # [TODO] match the accuracy against
+    # exercise_key = []
+    accuracy = []
+    true_exercises = []
+    false_exercises = []
+    same_exercises = []
+    for exercise in prerequisites:
+        try:
+            remediation_match = model_matches[exercise]
+        except KeyError:
+            continue
+        match = False
+        exercise_prereqs = prerequisites[exercise]
+        for prereq in exercise_prereqs:
+            if prereq in [remediation_match]:
+                match = True
+        accuracy.append(match)
+        # exercise_key.append(exercise)
+        if match: true_exercises.append(exercise)
+        if not match: false_exercises.append(exercise)
+        if remediation_match == exercise: same_exercises.append(exercise)
+    return accuracy, true_exercises, false_exercises, same_exercises
 
-data = read_prerequisite_data('prerequisites')
+
+prerequisites = read_prerequisite_data('prerequisites')
 learning_match = read_learning_similarity_data('learning_similar_tokens')
+accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, learning_match)
+
+
+
+# Printout a sample of True and False exercises
+true_sample = np.random.choice(true_exercises, size = 10, replace=False)
+
+
+print('<<<<<<<<<<TRUE SAMPLE>>>>>>>>>>>>>')
+for exercise in true_sample:
+    print('***EXERCISE***')
+    print(exercise)
+    print('******prerequisites***')
+    print(prerequisites[exercise])
+    print('******model matches***')
+    print(learning_match[exercise])
+
+false_sample = np.random.choice(false_exercises, size = 10, replace=False)
+print('<<<<<<<<<<FALSE SAMPLE>>>>>>>>>>>>>')
+for exercise in false_sample:
+    print('***EXERCISE***')
+    print(exercise)
+    print('******prerequisites***')
+    print(prerequisites[exercise])
+    print('******model matches***')
+    print(learning_match[exercise])
+
 
 pdb.set_trace()
-print(data)
 
 # Read the topic / tutorial for each content
 
