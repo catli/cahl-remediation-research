@@ -352,7 +352,7 @@ def tests_create_similarity_token():
         ('similar_to_evaluating_expressions|problem_type|true', 
             'evaluating-expressions-in-two-variables-2|RationalNumbers|true')]
     assert test_similarity.learning_similarity_tokens == expected_learning_token
-    assert test_similarity.response_similarity_tokens = expected_similar_token
+    assert test_similarity.response_similarity_tokens == expected_similar_token
     print('PASSES TEST!!')
 
 
