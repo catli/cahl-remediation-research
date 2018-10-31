@@ -236,14 +236,14 @@ class CreateSimilarityToken:
                 self.missing_learning_tokens.append(token)
 
 
-    def find_similar_learning_token_using_cosine(self):
+    def find_similar_learning_token(self, method):
         '''
             Input: The learning tokens, learning tokens, response embedding and response tokens
             Output: A list of response response token that most closely approximates each learning state
                 (true vector - false vector)
         '''
         similarity_tokens = self.generate_similarity_tokens(
-                                method = "cosine",
+                                method = method,
                                 num_loc=3,
                                 target_vectors = self.learning_vectors,
                                 comparison_vectors = self.response_vectors)
@@ -251,23 +251,7 @@ class CreateSimilarityToken:
         print("*highest cosine similarity tokens created*")
 
 
-    def find_similar_learning_token_using_euclidean(self): 
-        # [UPD!!]
-        '''
-            Input: The learning tokens, learning tokens, response embedding and response tokens
-            Output: A list of response response token that most closely approximates each learning state
-                (true vector - false vector)
-        '''
-        similarity_tokens = self.generate_similarity_tokens(
-                                method = "euclidean",
-                                num_loc=3,
-                                target_vectors = self.learning_vectors,
-                                comparison_vectors = self.response_vectors)
-        self.learning_similarity_tokens = similarity_tokens
-        print("*highest euclidean distance tokens created*")
-
-
-    def find_similar_response_token_using_cosine(self):
+    def find_similar_response_token(self, method):
         '''
             find the most similar token based on cosine similarity matrix
             input: vectors - the embedding vectors for each token
@@ -275,7 +259,7 @@ class CreateSimilarityToken:
         '''
 
         similarity_tokens = self.generate_similarity_tokens(
-                                method = "cosine",
+                                method = method,
                                 num_loc=2,
                                 target_vectors = self.response_vectors,
                                 comparison_vectors = self.response_vectors)
@@ -365,7 +349,7 @@ response_vectors = read_embedding_vectors('embed_vectors_test')
 response_tokens = read_tokens('embed_index_test')
 learning_similarity = CreateSimilarityToken(response_vectors, response_tokens)
 learning_similarity.create_similar_learning_token_from_response_token()
-learning_similarity.find_similar_response_token_using_cosine()
+learning_similarity.find_similar_response_token('cosine')
 
 
 # write_similarity_token_file('learning_similar_tokens'
