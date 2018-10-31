@@ -365,7 +365,7 @@ response_vectors = read_embedding_vectors('embed_vectors_test')
 response_tokens = read_tokens('embed_index_test')
 learning_similarity = CreateSimilarityToken(response_vectors, response_tokens)
 learning_similarity.create_similar_learning_token_from_response_token()
-learning_similarity.find_similar_response_token()
+learning_similarity.find_similar_response_token_using_cosine()
 
 
 # write_similarity_token_file('learning_similar_tokens'
