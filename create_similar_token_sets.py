@@ -118,10 +118,12 @@ def create_highest_similarity_token_excl_self(target_token, response_tokens, sim
         Output: the most similar token to the target token
         Exclude any similar token that are exact matches of target
     '''
-    similar_tokens = [response_tokens[loc] for loc in similarity_locs]
+    similar_tokens = [response_tokens[similarity_loc] for similarity_loc in similarity_locs]
     # exclude similar tokens that are the same as target 
     # and pick the last token
-    similar_token = list(filter(lambda x: target_token  not in x, similar_tokens))
+    similar_token = list(filter(lambda x: target_token not in x, similar_tokens))
+    # if more than one similar token selected
+    # then select the last one in the sorted list
     if len(similar_token)>1:
         similar_token = similar_token[loc]
     return ''.join(similar_token)
@@ -246,12 +248,14 @@ class CreateSimilarityToken:
                                 method = method,
                                 num_loc=3,
                                 target_vectors = self.learning_vectors,
-                                comparison_vectors = self.response_vectors)
+                                target_tokens = self.learning_state_tokens,
+                                comparison_vectors = self.response_vectors,
+                                comparison_tokens = self.response_tokens)
         self.learning_similarity_tokens = similarity_tokens
         print("*highest cosine similarity tokens created*")
 
 
-    def find_similar_response_token(self, method):
+    def find_similar_response_token(self, method='cosine'):
         '''
             find the most similar token based on cosine similarity matrix
             input: vectors - the embedding vectors for each token
@@ -262,12 +266,15 @@ class CreateSimilarityToken:
                                 method = method,
                                 num_loc=2,
                                 target_vectors = self.response_vectors,
-                                comparison_vectors = self.response_vectors)
+                                target_tokens = self.response_tokens,
+                                comparison_vectors = self.response_vectors,
+                                comparison_tokens = self.response_tokens)
         self.response_similarity_tokens = similarity_tokens
         print("*highest similarity response tokens create*")
 
     def generate_similarity_tokens(self,
-            method, num_loc, target_vectors, comparison_vectors):
+            method, num_loc, target_vectors, 
+            target_tokens, comparison_vectors, comparison_tokens):
         '''
         Input: Assume response vector and learning vector generated before
             similarity calculated
@@ -276,9 +283,12 @@ class CreateSimilarityToken:
         '''
         response_similarity_tokens = []
         if method == "cosine":
-            # [TODO] how to make number of fields flexible so we can
-            # add compare either just response vector or both learning and
-            # response vector
+            # create a map of min cosine distace where each row i and
+            # column j represents the similarity between vector i 
+            # in the set of target vectors and vector j in the 
+            # comparison vectors set
+            # similarity location find the location of 
+            # the (num_loc)th highest cosine similarity
             similarity_array = calculate_cosine_similarity(
                                 vectors_i = target_vectors,
                                 vectors_j = comparison_vectors)
@@ -286,22 +296,28 @@ class CreateSimilarityToken:
                                 similarity_array = similarity_array,
                                 num_loc = num_loc)
         else:
+            # create a map of min euclidean distace where each row i and
+            # column j represents the similarity between vector i 
+            # in the set of target vectors and vector j in the 
+            # comparison vectors set
+            # similarity location find the location of 
+            # the (num_loc)th small euclidean distance
             similarity_array = calculate_euclidean_distance(
                                 vectors_i = target_vectors,
                                 vectors_j = comparison_vectors)
             similarity_loc = find_the_min_loc(
                                 similarity_array = similarity_array,
                                 num_loc = num_loc)
-        for i, token in enumerate(comparison_vectors):
-            # for each token, identify the associated similar num of tokens
+        for i, token in enumerate(target_tokens):
+            # for each token, identify the location of similarity token
             vectors_most_similar_loc = similarity_loc[i]
             # the loc specifies the location of the highest similarity
             if method == "cosine":
                 similar_token = create_highest_similarity_token_excl_self(token,
-                                comparison_vectors, vectors_most_similar_loc, -1)
+                                comparison_tokens, vectors_most_similar_loc, -1)
             else:
                 similar_token = create_highest_similarity_token_excl_self(token,
-                                comparison_vectors, vectors_most_similar_loc, 0)
+                                comparison_tokens, vectors_most_similar_loc, 0)
             response_similarity_tokens.append((token, similar_token))
             return response_similarity_tokens
 
@@ -309,19 +325,24 @@ class CreateSimilarityToken:
 
 def tests_create_similarity_token():
     # Check that the number of problem type token is same as original data set 
-    test_vectors = np.array([[1,2,3,4],[2,3,1,0]])
-    test_tokens = ['evaluating-expressions-in-two-variables-2|RationalNumbers',
-        'similar_to_evaluating_expressions|problem_type|true',
-        'addition_1|problem-type-0', 
-        'similar_to_addition_1|problem_type|true']
+    test_vectors = np.array([[1,2,2,1],[1,1,0,1],[1,1,2,2.1],
+        [-1,-3,1,2],[-1,-2,1,1],[0,1,0,-1],[1,-1,0,1]])
+    test_tokens = [
+        'addition_1|problem-type-0|true',
+        'counting-out-1-20-objects|A|true',
+        'addition_1|problem-type-0|false',
+        'evaluating-expressions-in-two-variables-2|RationalNumbers|true',
+        'evaluating-expressions-in-two-variables-2|RationalNumbers|false',
+        'similar_to_addition_1|problem_type|true',
+        'similar_to_evaluating_expressions|problem_type|true']
     test_similarity = CreateSimilarityToken(test_vectors, test_tokens)
     test_similarity.create_similar_learning_token_from_response_token()
     test_similarity.find_similar_response_token()
-    expected_learning_token = [
+    expected_learning_tokens = [
         ('evaluating-expressions-in-two-variables-2|RationalNumbers',
         'similar_to_evaluating_expressions|problem_type|true'),
         ('addition_1|problem-type-0', 'similar_to_addition_1|problem_type|true')]
-    expected_similar_token = [('addition_1|problem-type-0|true',
+    expected_similar_tokens = [('addition_1|problem-type-0|true',
             'addition_1|problem-type-0|false'),
         ('counting-out-1-20-objects|A|true',
             'addition_1|problem-type-0|false'),
@@ -335,8 +356,8 @@ def tests_create_similarity_token():
             'addition_1|problem-type-0|true'), 
         ('similar_to_evaluating_expressions|problem_type|true', 
             'evaluating-expressions-in-two-variables-2|RationalNumbers|true')]
-    assert test_similarity.learning_similarity_tokens == expected_learning_token
-    assert test_similarity.response_similarity_tokens == expected_similar_token
+    assert test_similarity.learning_similarity_tokens.sort() == expected_learning_tokens.sort()
+    assert test_similarity.response_similarity_tokens.sort() == expected_similar_tokens.sort()
     print('PASSES TEST!!')
 
 
@@ -344,6 +365,9 @@ def tests_create_similarity_token():
 #########################################
 # [TODO] create the average exercise embedding
 # [TODO] run and create same output for exercise embedding
+
+# RUN TEST WHEN RUNNING MODEL
+# tests_create_similarity_token()
 
 response_vectors = read_embedding_vectors('embed_vectors_test')
 response_tokens = read_tokens('embed_index_test')
