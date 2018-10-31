@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pdb
+import csv
 # Script to validate the output against the manually entered prerequisites
 # (1) What percentage of the generated output was also represented in
 # the prerequisites list
@@ -35,7 +36,7 @@ def read_prerequisite_data(file_name):
     return prerequisites
 
 
-def read_learning_similarity_data(file_name):
+def read_learning_similarity_data(file_name, file_path):
     '''
         read in the similarity data
         as a dictionary with the name of each target exercise
@@ -44,8 +45,7 @@ def read_learning_similarity_data(file_name):
     '''
     # Notes for steps:
     # read in each line for the learning similarity data
-    # [TODO] update path for CAHL directory
-    path = os.path.expanduser('~/Documents/cahl_analysis/'+file_name+'.csv')
+    path = os.path.expanduser(file_path+file_name+'.csv')
     reader = open(path,'r')
     learning_similarity_exercises = {}
     for line in reader:
@@ -61,6 +61,55 @@ def read_learning_similarity_data(file_name):
             learning_similarity_exercises[exercise_key] = similar_exercise
     return learning_similarity_exercises
 
+
+def find_exercise_for_specific_subject(subject,
+        topic_file_path, topic_file_name):
+    '''
+        read in the topic tree and filter for exercises of one subject
+        that way we can focus on patterns for one subject
+    '''
+    path = os.path.expanduser(topic_file_path+topic_file_name+'.csv')
+    reader = open(path,'r')
+    topic_exercises = []
+    for line in reader:
+        splitline = line.strip().split(",")
+        if subject in splitline:
+            # if subject found in the line, then append
+            topic_exercises.append(splitline[0])
+    return np.unique(topic_exercises)
+
+
+
+def filter_prerequisite_in_subject(prerequisites, subject_exercises):
+    '''
+        keep only the prerequisites that are in the list of exercises
+        in a subject subset
+    '''
+    filtered_prerequisites = {}
+    for exercise in prerequisites:
+        if exercise in subject_exercises:
+            filtered_prerequisites[exercise] = prerequisites[exercise]
+    return filtered_prerequisites
+
+
+def read_topic_tree_file(topic_file_name, topic_file_path):
+    '''
+        read in the topic tree and filter for exercises of one subject
+        that way we can focus on patterns for one subject
+    '''
+    learning_similarity_exercises = {}
+    for line in reader:
+        splitline = line.strip().split(",")
+        # split the text by "|" to eliminate problem type, keeping only
+        # exercise
+        exercise_key = splitline[0].split('|')[0]
+        similar_exercise = splitline[1].split('|')[0]
+        try:
+            if exercise_key not in learning_similarity_exercises:
+                learning_similarity_exercises[exercise_key].append(similar_exercise)
+        except KeyError:
+            learning_similarity_exercises[exercise_key] = similar_exercise
+    return learning_similarity_exercises
 
 
 def check_model_accuracy(prerequisites, model_matches):
@@ -88,56 +137,67 @@ def check_model_accuracy(prerequisites, model_matches):
     return accuracy, true_exercises, false_exercises, same_exercises
 
 
-prerequisites = read_prerequisite_data('prerequisites')
-learning_match = read_learning_similarity_data('learning_similar_tokens')
-accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, learning_match)
+def write_output_file(file_name, output):
+    '''
+        write the random sample as an output file
+    '''
+    path = os.path.expanduser(file_name+'.csv')
+    print(path)
+    open_file = open(path, "w")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = ',')
+        csvwriter.writerows(output)
 
+
+def output_random_sample(exercises, max_sample, prerequisites, remediation_match):
+    '''
+        randomly sample a series of exercises and rint the output
+    '''
+    max_size = min(len(exercises), max_sample)
+    sample_exercises = np.random.choice(exercises, size = max_size, replace=False)
+    sample_output = []
+    for exercise in sample_exercises:
+        sample_output.append(
+            [exercise,prerequisites[exercise],remediation_match[exercise]])
+    return sample_output
+
+
+
+
+
+
+prerequisites = read_prerequisite_data('prerequisites')
+# [TODO] update path for CAHL directory
+remediation_match = read_learning_similarity_data('learning_similar_tokens',
+                    '~/Documents/cahl_analysis/')
+accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, remediation_match)
+
+
+# [TODO] update path for CAHL directory
+subject_exercises = find_exercise_for_specific_subject(
+                        subject = 'pre-algebra',
+                        topic_file_name = 'math_topic_tree',
+                        topic_file_path = '~/Documents/cahl_remediation_research/')
+subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
+print(subject_prerequisites)
+accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(subject_prerequisites, remediation_match)
 
 
 # Printout a sample of True and False exercises
-true_sample = np.random.choice(true_exercises, size = 10, replace=False)
+true_sample = output_random_sample(exercises = true_exercises,
+                    max_sample = 10,
+                    prerequisites = prerequisites,
+                    remediation_match= remediation_match)
+write_output_file('true_sample',true_sample)
 
+false_sample = output_random_sample(exercises = false_exercises,
+                    max_sample = 10,
+                    prerequisites = prerequisites,
+                    remediation_match= remediation_match)
+write_output_file('false_sample',false_sample)
 
-print('<<<<<<<<<<TRUE SAMPLE>>>>>>>>>>>>>')
-for exercise in true_sample:
-    print('***EXERCISE***')
-    print(exercise)
-    print('******prerequisites***')
-    print(prerequisites[exercise])
-    print('******model matches***')
-    print(learning_match[exercise])
-
-false_sample = np.random.choice(false_exercises, size = 10, replace=False)
-print('<<<<<<<<<<FALSE SAMPLE>>>>>>>>>>>>>')
-for exercise in false_sample:
-    print('***EXERCISE***')
-    print(exercise)
-    print('******prerequisites***')
-    print(prerequisites[exercise])
-    print('******model matches***')
-    print(learning_match[exercise])
 
 
 pdb.set_trace()
 
-# Read the topic / tutorial for each content
 
-
-# and join the to the prerequisites / learning token data 
-
-
-# Read the learning similar tokens
-# Read in as dictionary
-
-
-
-# Compare the model-generated learning dictionary
-# against the prerequisite dictionary
-# Store the validation
-#    TRUE if matches prerequisites
-#    FALSE if  does not match
-
-
-
-
-# Show some example of mach and mismatch

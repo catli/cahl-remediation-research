@@ -376,16 +376,16 @@ learning_similarity.create_similar_learning_token_from_response_token()
 learning_similarity.find_similar_response_token('cosine')
 
 
-# write_similarity_token_file('learning_similar_tokens'
-#                             ,learning_similarity.learning_similarity_tokens)
-# # this file should have the same number of state and be in the same order as above
-# write_token_file('learning_state_tokens'
-#                             ,learning_similarity.learning_state_tokens)
-# write_vector_file('problemtype_false_vectors'
-#                             ,learning_similarity.false_vectors)
-# write_vector_file('problemtype_true_vectors'
-#                             ,learning_similarity.true_vectors)
-# write_vector_file('learning_vectors'
-#                             ,learning_similarity.learning_vectors)
+write_similarity_token_file('learning_similar_tokens'
+                            ,learning_similarity.learning_similarity_tokens)
+# this file should have the same number of state and be in the same order as above
+write_token_file('learning_state_tokens'
+                            ,learning_similarity.learning_state_tokens)
+write_vector_file('problemtype_false_vectors'
+                            ,learning_similarity.false_vectors)
+write_vector_file('problemtype_true_vectors'
+                            ,learning_similarity.true_vectors)
+write_vector_file('learning_vectors'
+                            ,learning_similarity.learning_vectors)
 
 
