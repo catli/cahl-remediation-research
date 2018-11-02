@@ -168,19 +168,19 @@ def output_random_sample(exercises, max_sample, prerequisites, remediation_match
 
 prerequisites = read_prerequisite_data('prerequisites')
 # [TODO] update path for CAHL directory
-remediation_match = read_learning_similarity_data('learning_similar_tokens',
+remediation_match = read_learning_similarity_data('remediation_match_tokens',
                     '~/Documents/cahl_analysis/')
 accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, remediation_match)
 
 
 # [TODO] update path for CAHL directory
-subject_exercises = find_exercise_for_specific_subject(
-                        subject = 'pre-algebra',
-                        topic_file_name = 'math_topic_tree',
-                        topic_file_path = '~/Documents/cahl_remediation_research/')
-subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
-print(subject_prerequisites)
-accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(subject_prerequisites, remediation_match)
+# subject_exercises = find_exercise_for_specific_subject(
+#                         subject = 'pre-algebra',
+#                         topic_file_name = 'math_topic_tree',
+#                         topic_file_path = '~/Documents/cahl_remediation_research/')
+# subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
+# print(subject_prerequisites)
+# accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(subject_prerequisites, remediation_match)
 
 
 # Printout a sample of True and False exercises
