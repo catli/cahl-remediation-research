@@ -257,7 +257,6 @@ class CreateSimilarityToken:
         '''
         similarity_tokens = self.generate_similarity_tokens(
                                 method = method,
-                                num_loc=3,
                                 target_vectors = self.learning_vectors,
                                 target_tokens = self.learning_state_tokens,
                                 comparison_vectors = self.response_vectors,
@@ -275,19 +274,16 @@ class CreateSimilarityToken:
         '''
         similarity_tokens = self.generate_similarity_tokens(
                                 method = method,
-                                num_loc=2,
                                 target_vectors = self.response_vectors,
                                 target_tokens = self.response_tokens,
                                 comparison_vectors = self.response_vectors,
                                 comparison_tokens = self.response_tokens,
-                                sample_number = sample_numer)
+                                sample_number = sample_number)
         self.response_similarity_tokens = similarity_tokens
         print("*highest similarity response tokens create*")
 
-    def generate_similarity_tokens(self,
-            method, num_loc, target_vectors, 
-            target_tokens, comparison_vectors, comparison_tokens,
-            sample_number):
+    def generate_similarity_tokens(self, method, target_vectors, target_tokens,
+            comparison_vectors, comparison_tokens, sample_number):
         '''
         Input: Assume response vector and learning vector generated before
             similarity calculated
@@ -297,17 +293,17 @@ class CreateSimilarityToken:
         response_similarity_tokens = []
         if method == "cosine":
             # create a map of min cosine distace where each row i and
-            # column j represents the similarity between vector i 
-            # in the set of target vectors and vector j in the 
+            # column j represents the similarity between vector i
+            # in the set of target vectors and vector j in the
             # comparison vectors set
-            # similarity location find the location of 
+            # similarity location find the location of
             # the (num_loc)th highest cosine similarity
             similarity_array = calculate_cosine_similarity(
                                 vectors_i = target_vectors,
                                 vectors_j = comparison_vectors)
             similarity_loc = find_the_max_loc(
                                 similarity_array = similarity_array,
-                                num_loc = num_loc)
+                                num_loc = 100)
         else:
             # create a map of min euclidean distace where each row i and
             # column j represents the similarity between vector i 
@@ -320,7 +316,7 @@ class CreateSimilarityToken:
                                 vectors_j = comparison_vectors)
             similarity_loc = find_the_min_loc(
                                 similarity_array = similarity_array,
-                                num_loc = num_loc)
+                                num_loc = 100)
         for i, token in enumerate(target_tokens):
             # for each token, identify the location of similarity token
             vectors_most_similar_loc = similarity_loc[i]
@@ -377,7 +373,7 @@ def tests_create_similarity_token():
 
 def write_output(similarity, root_path= '~/'):
     # write the output
-    analysis_path = root_path + 'cahl_analysis'
+    analysis_path = root_path + 'cahl_analysis/'
     write_similarity_token_file(path = analysis_path,
            file_name = 'response_similar_tokens',
            similarity_tokens = similarity.response_similarity_tokens)
@@ -387,7 +383,7 @@ def write_output(similarity, root_path= '~/'):
     # this file should have the same number of state and be in the same order as above
     write_token_file(path = analysis_path, 
            file_name = 'learning_state_tokens',
-           similarity_tokens = similarity.learning_state_tokens)
+           tokens = similarity.learning_state_tokens)
     write_vector_file(path = analysis_path,
             file_name = 'response_false_vectors',
             vectors = similarity.false_vectors)
@@ -415,7 +411,7 @@ similarity_instance.create_similar_learning_token_from_response_token(
                     sample_number = 5)
 print('***CREATE RESPONSE TOKEN**')
 similarity_instance.find_similar_response_token(method = 'euclidean')
-write_output(similarity_instance, path = '~/Documents/')
+write_output(similarity_instance, root_path = '~/Documents/')
 
 
 
