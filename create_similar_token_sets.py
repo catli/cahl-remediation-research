@@ -114,7 +114,7 @@ def find_the_min_loc(similarity_array, num_loc):
     least = np.argpartition(similarity_array, num_loc)[:, :num_loc]
     return least
 
-def create_highest_similarity_token_excl_self(target_token, response_tokens, similarity_locs, sample_number):
+def sample_highest_similarity_token_excl_self(target_token, response_tokens, similarity_locs, sample_number):
     '''
         Input: target token, entire set of response tokens and location highest similarity
             response tokens
@@ -197,7 +197,7 @@ class CreateSimilarityToken:
         # self.read_tokens(tokens_file_name)
 
     def create_similar_learning_token_from_response_token(self,
-            method="cosine"):
+            method="cosine", sample_number=1):
         '''
             aggregate function used to create learning state function
             Input: method used to calculate similarity, either "cosine" for
@@ -205,7 +205,8 @@ class CreateSimilarityToken:
         '''
         self.create_unique_problem_type_token()
         self.create_learning_state_embedding()
-        self.find_similar_learning_token(method)
+        self.find_similar_learning_token(method,
+                sample_number= sample_number)
 
     def create_unique_problem_type_token(self):
         '''
@@ -248,7 +249,7 @@ class CreateSimilarityToken:
                 self.missing_learning_tokens.append(token)
 
 
-    def find_similar_learning_token(self, method):
+    def find_similar_learning_token(self, method, sample_number=1):
         '''
             Input: The learning tokens, learning tokens, response embedding and response tokens
             Output: A list of response response token that most closely approximates each learning state
@@ -260,12 +261,13 @@ class CreateSimilarityToken:
                                 target_vectors = self.learning_vectors,
                                 target_tokens = self.learning_state_tokens,
                                 comparison_vectors = self.response_vectors,
-                                comparison_tokens = self.response_tokens)
+                                comparison_tokens = self.response_tokens,
+                                sample_number = sample_number)
         self.learning_similarity_tokens = similarity_tokens
         print("*remediation tokens created*")
 
 
-    def find_similar_response_token(self, method='cosine'):
+    def find_similar_response_token(self, method='cosine', sample_number = 1):
         '''
             find the most similar token based on cosine similarity matrix
             input: vectors - the embedding vectors for each token
@@ -277,7 +279,8 @@ class CreateSimilarityToken:
                                 target_vectors = self.response_vectors,
                                 target_tokens = self.response_tokens,
                                 comparison_vectors = self.response_vectors,
-                                comparison_tokens = self.response_tokens)
+                                comparison_tokens = self.response_tokens,
+                                sample_number = sample_numer)
         self.response_similarity_tokens = similarity_tokens
         print("*highest similarity response tokens create*")
 
@@ -323,11 +326,11 @@ class CreateSimilarityToken:
             vectors_most_similar_loc = similarity_loc[i]
             # the loc specifies the location of the highest similarity
             if method == "cosine":
-                similar_token = create_highest_similarity_token_excl_self(token,
+                similar_token = sample_highest_similarity_token_excl_self(token,
                                 comparison_tokens, vectors_most_similar_loc,
                                 sample_number = sample_number)
             else:
-                similar_token = create_highest_similarity_token_excl_self(token,
+                similar_token = sample_highest_similarity_token_excl_self(token,
                                 comparison_tokens, vectors_most_similar_loc, 
                                 sample_number = sample_number)
             response_similarity_tokens.append((token, similar_token))
@@ -400,7 +403,9 @@ def write_output(similarity):
 response_vectors = read_embedding_vectors('~/Documents/cahl_output/embed_vectors_small')
 response_tokens = read_tokens('~/Documents/cahl_output/embed_index_small')
 similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
-similarity_instance.create_similar_learning_token_from_response_token(method = 'euclidean')
+similarity_instance.create_similar_learning_token_from_response_token(
+                    method = 'euclidean',
+                    sample_number = 5)
 print('***CREATE RESPONSE TOKEN**')
 similarity_instance.find_similar_response_token(method = 'euclidean')
 write_output(similarity_instance)
