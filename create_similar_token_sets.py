@@ -164,22 +164,22 @@ def read_tokens(file_name):
         response_tokens.append(line.strip())
     return response_tokens
 
-def write_token_file(file_name, tokens):
+def write_token_file(path, file_name, tokens):
     '''write individual tokens into flat file. Estimated time: 1.5 sec for 1M rows'''
-    path = os.path.expanduser('~/analysis/'+file_name+'.csv')
+    path = os.path.expanduser(path+file_name+'.csv')
     print(path)
     open_file = open(path, "w")
     with open_file:
         [open_file.write(token + '\n') for token in tokens]
 
-def write_vector_file(file_name, vectors):
-    path = os.path.expanduser('~/analysis/'+file_name+'.out')
+def write_vector_file(path, file_name, vectors):
+    path = os.path.expanduser(path+file_name+'.out')
     print(path)
     np.savetxt(path, vectors, delimiter = ',')
 
-def write_similarity_token_file(file_name, similarity_tokens):
+def write_similarity_token_file(path, file_name, similarity_tokens):
     '''write tokens into flat file, can handle a tuple of tokens per line for similarity tokens'''
-    path = os.path.expanduser('~/analysis/'+file_name+'.csv')
+    path = os.path.expanduser(path+file_name+'.csv')
     print(path)
     open_file = open(path, "w")
     with open_file:
@@ -375,21 +375,28 @@ def tests_create_similarity_token():
     assert test_similarity.response_similarity_tokens.sort() == expected_similar_tokens.sort()
     print('PASSES TEST!!')
 
-def write_output(similarity):
-    # write the output 
-    write_similarity_token_file('response_similar_tokens',
-           similarity.response_similarity_tokens)
-    write_similarity_token_file('remediation_match_tokens',
-           similarity.learning_similarity_tokens)
+def write_output(similarity, root_path= '~/'):
+    # write the output
+    analysis_path = root_path + 'cahl_analysis'
+    write_similarity_token_file(path = analysis_path,
+           file_name = 'response_similar_tokens',
+           similarity_tokens = similarity.response_similarity_tokens)
+    write_similarity_token_file(path = analysis_path,
+           file_name = 'remediation_match_tokens',
+           similarity_tokens = similarity.learning_similarity_tokens)
     # this file should have the same number of state and be in the same order as above
-    write_token_file('learning_state_tokens'
-           ,similarity.learning_state_tokens)
-    write_vector_file('response_false_vectors'
-           ,similarity.false_vectors)
-    write_vector_file('response_true_vectors'
-          ,similarity.true_vectors)
-    write_vector_file('learning_state_vectors'
-          ,similarity.learning_vectors)
+    write_token_file(path = analysis_path, 
+           file_name = 'learning_state_tokens',
+           similarity_tokens = similarity.learning_state_tokens)
+    write_vector_file(path = analysis_path,
+            file_name = 'response_false_vectors',
+            vectors = similarity.false_vectors)
+    write_vector_file(path = analysis_path,
+            file_name = 'response_true_vectors',
+            vectors = similarity.true_vectors)
+    write_vector_file(path = analysis_path,
+            file_name = 'learning_state_vectors',
+             vectors = similarity.learning_vectors)
 
 
 #########################################
@@ -408,7 +415,7 @@ similarity_instance.create_similar_learning_token_from_response_token(
                     sample_number = 5)
 print('***CREATE RESPONSE TOKEN**')
 similarity_instance.find_similar_response_token(method = 'euclidean')
-write_output(similarity_instance)
+write_output(similarity_instance, path = '~/Documents/')
 
 
 
