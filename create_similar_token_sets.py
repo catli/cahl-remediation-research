@@ -114,22 +114,28 @@ def find_the_min_loc(similarity_array, num_loc):
     least = np.argpartition(similarity_array, num_loc)[:, :num_loc]
     return least
 
-def create_highest_similarity_token_excl_self(target_token, response_tokens, similarity_locs, loc):
+def create_highest_similarity_token_excl_self(target_token, response_tokens, similarity_locs, sample_number):
     '''
         Input: target token, entire set of response tokens and location highest similarity
             response tokens
         Output: the most similar token to the target token
         Exclude any similar token that are exact matches of target
+            and any tokens where the exercise matches
     '''
     similar_tokens = [response_tokens[similarity_loc] for similarity_loc in similarity_locs]
-    # exclude similar tokens that are the same as target 
-    # and pick the last token
-    similar_token = list(filter(lambda x: target_token not in x, similar_tokens))
+    # find the target exercise (remove the problem type)
+    target_exercise = target_token.split("|")[0]
+    # exclude similar tokens that below to the same exercise
+    # as the target
+    # [TODO]: make this flexible so the exclusion
+    filtered_similar_tokens = filter(lambda x: target_exercise!=x.split("|")[0],
+                        similar_tokens)
     # if more than one similar token selected
     # then select the last one in the sorted list
-    if len(similar_token)>1:
-        similar_token = similar_token[loc]
-    return ''.join(similar_token)
+    # sample 5, 10, 20 
+    if len(filtered_similar_tokens)>1:
+        filtered_similar_tokens = filtered_similar_tokens[-sample_number: ]
+    return filtered_similar_tokens
 
 
 ##########################################
@@ -140,8 +146,9 @@ def read_embedding_vectors(file_name):
         read in the response embedding vector files
         these were stored using np.savetxt (.out)
         return a matrix of embedding vectors
+        # TESTING
     '''
-    path = os.path.expanduser('~/output/'+file_name+'.out')
+    path = os.path.expanduser(file_name+'.out')
     response_vectors = np.loadtxt(path, delimiter = ',')
     return response_vectors
 
@@ -150,7 +157,7 @@ def read_tokens(file_name):
         read in the flat file containing the list of response tokens
         return an array of response tokens associated with embedding vectors
     '''
-    path = os.path.expanduser('~/output/'+file_name+'.csv')
+    path = os.path.expanduser(file_name+'.csv')
     reader = open(path,'r')
     response_tokens = []
     for line in reader:
@@ -166,7 +173,7 @@ def write_token_file(file_name, tokens):
         [open_file.write(token + '\n') for token in tokens]
 
 def write_vector_file(file_name, vectors):
-    path = os.path.expanduser('analysis/'+file_name+'.out')
+    path = os.path.expanduser('~/analysis/'+file_name+'.out')
     print(path)
     np.savetxt(path, vectors, delimiter = ',')
 
@@ -276,7 +283,8 @@ class CreateSimilarityToken:
 
     def generate_similarity_tokens(self,
             method, num_loc, target_vectors, 
-            target_tokens, comparison_vectors, comparison_tokens):
+            target_tokens, comparison_vectors, comparison_tokens,
+            sample_number):
         '''
         Input: Assume response vector and learning vector generated before
             similarity calculated
@@ -316,10 +324,12 @@ class CreateSimilarityToken:
             # the loc specifies the location of the highest similarity
             if method == "cosine":
                 similar_token = create_highest_similarity_token_excl_self(token,
-                                comparison_tokens, vectors_most_similar_loc, -1)
+                                comparison_tokens, vectors_most_similar_loc,
+                                sample_number = sample_number)
             else:
                 similar_token = create_highest_similarity_token_excl_self(token,
-                                comparison_tokens, vectors_most_similar_loc, 0)
+                                comparison_tokens, vectors_most_similar_loc, 
+                                sample_number = sample_number)
             response_similarity_tokens.append((token, similar_token))
         return response_similarity_tokens
 
@@ -386,8 +396,9 @@ def write_output(similarity):
 # RUN TEST WHEN RUNNING MODEL
 # tests_create_similarity_token()
 
-response_vectors = read_embedding_vectors('embed_vectors_small')
-response_tokens = read_tokens('embed_index_small')
+# TESTING: change directory for read_
+response_vectors = read_embedding_vectors('~/Documents/cahl_output/embed_vectors_small')
+response_tokens = read_tokens('~/Documents/cahl_output/embed_index_small')
 similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
 similarity_instance.create_similar_learning_token_from_response_token(method = 'euclidean')
 print('***CREATE RESPONSE TOKEN**')
