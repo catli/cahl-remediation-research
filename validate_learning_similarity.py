@@ -150,18 +150,6 @@ def check_model_accuracy(prerequisites, model_matches):
     return accuracy, avg_matches, true_exercises, false_exercises, same_exercises
 
 
-def write_output_file(file_name, output):
-    '''
-        write the random sample as an output file
-    '''
-    path = os.path.expanduser(file_name+'.csv')
-    print(path)
-    open_file = open(path, "w")
-    with open_file:
-        csvwriter = csv.writer(open_file, delimiter = ',')
-        csvwriter.writerows(output)
-
-
 def output_random_sample(exercises, max_sample, prerequisites, remediation_match):
     '''
         randomly sample a series of exercises and print the output
@@ -177,47 +165,82 @@ def output_random_sample(exercises, max_sample, prerequisites, remediation_match
 
 
 
+def write_sample_output_file(analysis_path, file_name, output):
+    '''
+        write the random sample as an output file
+    '''
+    path = os.path.expanduser(analysis_path + file_name+'.csv')
+    print(path)
+    open_file = open(path, "w")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = ',')
+        csvwriter.writerow(['exercise','true prerequisite','model matches'])
+        csvwriter.writerows(output)
 
 
+
+def write_accuracy_output_file(analysis_path, file_name, avg_matches, accuracy):
+    '''
+        write the random sample as an output file
+    '''
+    path = os.path.expanduser(analysis_path + file_name+'.csv')
+    print(path)
+    open_file = open(path, "w")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = ',')
+        csvwriter.writerow(['Avg rate of matching','% with any match' ])
+        csvwriter.writerow([avg_matches,accuracy])
+
+
+
+def print_and_output_sample(analysis_path, accuracy,
+    avg_matches, true_exercises, false_exercises, same_exercises,
+    prefix = '' ):
+    '''
+        print sample and output
+    '''
+    write_accuracy_output_file(analysis_path, 
+                file_name = '_accuracy_' + prefix, 
+                avg_matches = np.mean(avg_matches), 
+                accuracy = np.mean(accuracy))
+    # Printout a sample of True and False exercises
+    true_sample = output_random_sample(exercises = true_exercises,
+                        max_sample = 10,
+                        prerequisites = prerequisites,
+                        remediation_match= remediation_match)
+    write_sample_output_file( analysis_path,
+                file_name = '_true_sample_'+ prefix,
+                output = true_sample)
+
+    false_sample = output_random_sample(exercises = false_exercises,
+                        max_sample = 10,
+                        prerequisites = prerequisites,
+                        remediation_match= remediation_match)
+    write_sample_output_file(analysis_path,
+                file_name =  '_false_sample_'+ prefix,
+                output = false_sample)
+
+
+
+
+
+
+root_path = os.path.split(os.getcwd())[0] + '/'
+analysis_path = root_path + 'cahl_analysis' + '/'
+code_path = root_path + 'cahl_remediation_research' + '/'
+
+
+####################################
 prerequisites = read_prerequisite_data('prerequisites')
-# [TODO] update path for CAHL directory
-remediation_match = read_learning_similarity_data('remediation_match_tokens',
-                    '~/Documents/cahl_analysis/')
+remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
+
 accuracy, avg_matches, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, remediation_match)
-
-
-# [TODO] update path for CAHL directory
-# subject_exercises = find_exercise_for_specific_subject(
-#                         subject = 'pre-algebra',
-#                         topic_file_name = 'math_topic_tree',
-#                         topic_file_path = '~/Documents/cahl_remediation_research/')
-# subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
-# print(subject_prerequisites)
-# accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(subject_prerequisites, remediation_match)
-
-print('Avg rate of matching:')
-print(np.mean(avg_matches))
-
-
-print('% with any match:')
-print(np.mean(accuracy))
-
-
-# Printout a sample of True and False exercises
-true_sample = output_random_sample(exercises = true_exercises,
-                    max_sample = 10,
-                    prerequisites = prerequisites,
-                    remediation_match= remediation_match)
-write_output_file('true_sample',true_sample)
-
-false_sample = output_random_sample(exercises = false_exercises,
-                    max_sample = 10,
-                    prerequisites = prerequisites,
-                    remediation_match= remediation_match)
-write_output_file('false_sample',false_sample)
-
-
-
-
-
-
+print_and_output_sample(analysis_path, accuracy, avg_matches, true_exercises, false_exercises, same_exercises)
+subject_exercises = find_exercise_for_specific_subject(
+                        subject = 'pre-algebra',
+                        topic_file_name = 'math_topic_tree',
+                        topic_file_path = code_path)
+subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
+accuracy, avg_matches,  true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites= subject_prerequisites,
+                                                                model_matches = remediation_match)
+print_and_output_sample(analysis_path, accuracy, avg_matches, true_exercises, false_exercises, same_exercises, prefix = 'prealgebra')

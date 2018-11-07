@@ -429,7 +429,7 @@ def main():
 
 if __name__ == "__main__":
     read_file_affix = 'full'
-    method = 'cosine'
+    method = 'euclidean'
     main()
 
 
