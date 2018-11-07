@@ -1,7 +1,8 @@
 import os
 import numpy as np
-import pdb
 import csv
+import ast
+import pdb
 # Script to validate the output against the manually entered prerequisites
 # (1) What percentage of the generated output was also represented in
 # the prerequisites list
@@ -45,20 +46,27 @@ def read_learning_similarity_data(file_name, file_path):
     '''
     # Notes for steps:
     # read in each line for the learning similarity data
-    path = os.path.expanduser(file_path+file_name+'.csv')
+    path = os.path.expanduser(file_path+file_name+'.tsv')
     reader = open(path,'r')
     learning_similarity_exercises = {}
     for line in reader:
-        splitline = line.strip().split(",")
+        splitline = line.strip().split("\t")
         # split the text by "|" to eliminate problem type, keeping only
-        # exercise
+        # name of exercise
         exercise_key = splitline[0].split('|')[0]
-        similar_exercise = splitline[1].split('|')[0]
+        # evaluate the set of matches as an array
+        similar_exercise = ast.literal_eval(splitline[1])
         try:
-            if exercise_key not in learning_similarity_exercises:
-                learning_similarity_exercises[exercise_key].append(similar_exercise)
-        except KeyError:
+            if exercise_key in learning_similarity_exercises:
+                [learning_similarity_exercises[exercise_key].append(exercise) for exercise
+                    in similar_exercise]
+            else:
+                # if multiple matches created for the same exercise
+                learning_similarity_exercises[exercise_key] = similar_exercise
+        except:
             learning_similarity_exercises[exercise_key] = similar_exercise
+            pdb.set_trace()
+        #     learning_similarity_exercises[exercise_key] = similar_exercise
     return learning_similarity_exercises
 
 
@@ -116,6 +124,7 @@ def check_model_accuracy(prerequisites, model_matches):
     # [TODO] match the accuracy against
     # exercise_key = []
     accuracy = []
+    avg_matches = []
     true_exercises = []
     false_exercises = []
     same_exercises = []
@@ -127,14 +136,18 @@ def check_model_accuracy(prerequisites, model_matches):
         match = False
         exercise_prereqs = prerequisites[exercise]
         for prereq in exercise_prereqs:
-            if prereq in [remediation_match]:
-                match = True
+            is_match = [ prereq == item.split("|")[0]
+                for item in remediation_match]
+            avg_match = np.mean(is_match)
+            if max(is_match):
+                match = max(is_match)
+        avg_matches.append(avg_match)
         accuracy.append(match)
         # exercise_key.append(exercise)
         if match: true_exercises.append(exercise)
         if not match: false_exercises.append(exercise)
         if remediation_match == exercise: same_exercises.append(exercise)
-    return accuracy, true_exercises, false_exercises, same_exercises
+    return accuracy, avg_matches, true_exercises, false_exercises, same_exercises
 
 
 def write_output_file(file_name, output):
@@ -151,7 +164,7 @@ def write_output_file(file_name, output):
 
 def output_random_sample(exercises, max_sample, prerequisites, remediation_match):
     '''
-        randomly sample a series of exercises and rint the output
+        randomly sample a series of exercises and print the output
     '''
     max_size = min(len(exercises), max_sample)
     sample_exercises = np.random.choice(exercises, size = max_size, replace=False)
@@ -170,7 +183,7 @@ prerequisites = read_prerequisite_data('prerequisites')
 # [TODO] update path for CAHL directory
 remediation_match = read_learning_similarity_data('remediation_match_tokens',
                     '~/Documents/cahl_analysis/')
-accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, remediation_match)
+accuracy, avg_matches, true_exercises, false_exercises, same_exercises = check_model_accuracy(prerequisites, remediation_match)
 
 
 # [TODO] update path for CAHL directory
@@ -181,6 +194,13 @@ accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy
 # subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
 # print(subject_prerequisites)
 # accuracy, true_exercises, false_exercises, same_exercises = check_model_accuracy(subject_prerequisites, remediation_match)
+
+print('Avg rate of matching:')
+print(np.mean(avg_matches))
+
+
+print('% with any match:')
+print(np.mean(accuracy))
 
 
 # Printout a sample of True and False exercises
@@ -198,6 +218,6 @@ write_output_file('false_sample',false_sample)
 
 
 
-pdb.set_trace()
+
 
 

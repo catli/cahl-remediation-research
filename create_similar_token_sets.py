@@ -161,7 +161,9 @@ def read_tokens(file_name):
     reader = open(path,'r')
     response_tokens = []
     for line in reader:
-        response_tokens.append(line.strip())
+        # drop any quotes in the token
+        clean_line = line.replace("'","").replace('"','')
+        response_tokens.append(clean_line.replace("'","").strip())
     return response_tokens
 
 def write_token_file(path, file_name, tokens):
@@ -179,11 +181,13 @@ def write_vector_file(path, file_name, vectors):
 
 def write_similarity_token_file(path, file_name, similarity_tokens):
     '''write tokens into flat file, can handle a tuple of tokens per line for similarity tokens'''
-    path = os.path.expanduser(path+file_name+'.csv')
+    path = os.path.expanduser(path+file_name+'.tsv')
     print(path)
     open_file = open(path, "w")
     with open_file:
-        csvwriter = csv.writer(open_file, delimiter = ',')
+        # [ open_file.write(token[0] + '\t' + token[1])
+        #     for token in similarity_tokens]
+        csvwriter = csv.writer(open_file, delimiter = '\t')
         csvwriter.writerows(similarity_tokens)
 
 
@@ -403,8 +407,8 @@ def write_output(similarity, root_path= '~/'):
 # tests_create_similarity_token()
 
 # TESTING: change directory for read_
-response_vectors = read_embedding_vectors('~/Documents/cahl_output/embed_vectors_small')
-response_tokens = read_tokens('~/Documents/cahl_output/embed_index_small')
+response_vectors = read_embedding_vectors('~/Documents/cahl_output/embed_vectors_full')
+response_tokens = read_tokens('~/Documents/cahl_output/embed_index_full')
 similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
 similarity_instance.create_similar_learning_token_from_response_token(
                     method = 'euclidean',
