@@ -103,6 +103,11 @@ def find_the_max_loc(similarity_array, num_loc):
         For each row of the data array, find the location of the top {num}
         values and return a list of the location
     '''
+    similarity_item_num  = similarity_array.shape[1]
+    if num_loc > similarity_item_num:
+        # if the num of similar item retrieved is greater than the available item
+        # than set to num of similar item
+        num_loc = similarity_item_num
     top = np.argpartition(similarity_array, -num_loc)[:, -num_loc:]
     return top
 
@@ -197,20 +202,9 @@ class CreateSimilarityToken:
         # vectors_file_name, tokens_file_name):
         self.response_vectors = embedding_vectors
         self.response_tokens  = embedding_tokens
-        # self.read_embedding_vectors(vectors_file_name)
-        # self.read_tokens(tokens_file_name)
-
-    def create_similar_learning_token_from_response_token(self,
-            method="cosine", sample_number=1):
-        '''
-            aggregate function used to create learning state function
-            Input: method used to calculate similarity, either "cosine" for
-                cosine similarity or "euclidean" for euclidean distance
-        '''
         self.create_unique_problem_type_token()
         self.create_learning_state_embedding()
-        self.find_similar_learning_token(method,
-                sample_number= sample_number)
+
 
     def create_unique_problem_type_token(self):
         '''
@@ -253,7 +247,8 @@ class CreateSimilarityToken:
                 self.missing_learning_tokens.append(token)
 
 
-    def find_similar_learning_token(self, method, sample_number=1):
+    def find_similar_tokens(self, method, target_vectors, target_tokens,
+                comparison_vectors, comparison_tokens, sample_number=1):
         '''
             Input: The learning tokens, learning tokens, response embedding and response tokens
             Output: A list of response response token that most closely approximates each learning state
@@ -261,30 +256,15 @@ class CreateSimilarityToken:
         '''
         similarity_tokens = self.generate_similarity_tokens(
                                 method = method,
-                                target_vectors = self.learning_vectors,
-                                target_tokens = self.learning_state_tokens,
-                                comparison_vectors = self.response_vectors,
-                                comparison_tokens = self.response_tokens,
+                                target_vectors = target_vectors,
+                                target_tokens = target_tokens,
+                                comparison_vectors = comparison_vectors,
+                                comparison_tokens = comparison_tokens,
                                 sample_number = sample_number)
-        self.learning_similarity_tokens = similarity_tokens
-        print("*remediation tokens created*")
+        print("*similar tokens matched*")
+        return similarity_tokens
 
 
-    def find_similar_response_token(self, method='cosine', sample_number = 1):
-        '''
-            find the most similar token based on cosine similarity matrix
-            input: vectors - the embedding vectors for each token
-            index: token names or the name associated with the average embeddings
-        '''
-        similarity_tokens = self.generate_similarity_tokens(
-                                method = method,
-                                target_vectors = self.response_vectors,
-                                target_tokens = self.response_tokens,
-                                comparison_vectors = self.response_vectors,
-                                comparison_tokens = self.response_tokens,
-                                sample_number = sample_number)
-        self.response_similarity_tokens = similarity_tokens
-        print("*highest similarity response tokens create*")
 
     def generate_similarity_tokens(self, method, target_vectors, target_tokens,
             comparison_vectors, comparison_tokens, sample_number):
@@ -338,7 +318,7 @@ class CreateSimilarityToken:
 
 
 
-def tests_create_similarity_token():
+def test_create_similarity_token():
     # Check that the number of problem type token is same as original data set 
     test_vectors = np.array([[1,2,2,1],[1,1,0,1],[1,1,2,2.1],
         [-1,-3,1,2],[-1,-2,1,1],[0,1,0,-1],[1,-1,0,1]])
@@ -351,8 +331,18 @@ def tests_create_similarity_token():
         'similar_to_addition_1|problem_type|true',
         'similar_to_evaluating_expressions|problem_type|true']
     test_similarity = CreateSimilarityToken(test_vectors, test_tokens)
-    test_similarity.create_similar_learning_token_from_response_token()
-    test_similarity.find_similar_response_token()
+    test_similar_tokens = test_similarity.find_similar_tokens(method = "cosine",
+                    sample_number = 1,
+                    target_vectors = test_similarity.response_vectors,
+                    target_tokens = test_similarity.response_tokens,
+                    comparison_vectors = test_similarity.response_vectors,
+                    comparison_tokens = test_similarity.response_tokens)
+    test_learning_tokens = test_similarity.find_similar_tokens(method = "cosine",
+                    sample_number = 1,
+                    target_vectors = test_similarity.learning_vectors,
+                    target_tokens = test_similarity.learning_state_tokens,
+                    comparison_vectors =test_similarity.response_vectors,
+                    comparison_tokens = test_similarity.response_tokens)
     expected_learning_tokens = [
         ('evaluating-expressions-in-two-variables-2|RationalNumbers',
         'similar_to_evaluating_expressions|problem_type|true'),
@@ -371,19 +361,15 @@ def tests_create_similarity_token():
             'addition_1|problem-type-0|true'), 
         ('similar_to_evaluating_expressions|problem_type|true', 
             'evaluating-expressions-in-two-variables-2|RationalNumbers|true')]
-    assert test_similarity.learning_similarity_tokens.sort() == expected_learning_tokens.sort()
-    assert test_similarity.response_similarity_tokens.sort() == expected_similar_tokens.sort()
+    assert test_learning_tokens.sort() == expected_learning_tokens.sort()
+    assert test_similar_tokens.sort() == expected_similar_tokens.sort()
     print('PASSES TEST!!')
 
-def write_output(similarity, root_path= '~/'):
+
+
+def write_output( similarity,  root_path, **kwargs):
     # write the output
     analysis_path = root_path + 'cahl_analysis/'
-    write_similarity_token_file(path = analysis_path,
-           file_name = 'response_similar_tokens',
-           similarity_tokens = similarity.response_similarity_tokens)
-    write_similarity_token_file(path = analysis_path,
-           file_name = 'remediation_match_tokens',
-           similarity_tokens = similarity.learning_similarity_tokens)
     # this file should have the same number of state and be in the same order as above
     write_token_file(path = analysis_path, 
            file_name = 'learning_state_tokens',
@@ -397,6 +383,10 @@ def write_output(similarity, root_path= '~/'):
     write_vector_file(path = analysis_path,
             file_name = 'learning_state_vectors',
              vectors = similarity.learning_vectors)
+    for key, value in kwargs.items():
+        write_similarity_token_file(path = analysis_path,
+           file_name = key,
+           similarity_tokens = value)
 
 
 #########################################
@@ -406,17 +396,40 @@ def write_output(similarity, root_path= '~/'):
 # RUN TEST WHEN RUNNING MODEL
 # tests_create_similarity_token()
 
-# TESTING: change directory for read_
-response_vectors = read_embedding_vectors('~/Documents/cahl_output/embed_vectors_full')
-response_tokens = read_tokens('~/Documents/cahl_output/embed_index_full')
-similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
-similarity_instance.create_similar_learning_token_from_response_token(
-                    method = 'euclidean',
-                    sample_number = 5)
-print('***CREATE RESPONSE TOKEN**')
-similarity_instance.find_similar_response_token(method = 'euclidean')
-write_output(similarity_instance, root_path = '~/Documents/')
+def main():
+    root_path = os.path.split(os.getcwd())[0] + '/'
+    print('root path: '+ root_path)
+    response_vectors = read_embedding_vectors(root_path +
+                            'cahl_output/embed_vectors_' + read_file_affix)
+    response_tokens = read_tokens(root_path +
+                            'cahl_output/embed_index_' + read_file_affix)
+    similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
+
+    # find match between learning staste and response tokens
+    remediation_match_tokens = similarity_instance.find_similar_tokens(method = method,
+                    sample_number = 5,
+                    target_vectors = similarity_instance.learning_vectors,
+                    target_tokens = similarity_instance.learning_state_tokens,
+                    comparison_vectors =similarity_instance.response_vectors,
+                    comparison_tokens = similarity_instance.response_tokens)
+
+    # find match between learning staste and response tokens
+    response_similar_tokens = similarity_instance.find_similar_tokens(method = method,
+                    sample_number = 1,
+                    target_vectors = similarity_instance.response_vectors,
+                    target_tokens = similarity_instance.response_tokens,
+                    comparison_vectors =similarity_instance.response_vectors,
+                    comparison_tokens = similarity_instance.response_tokens)
+    print('***CREATE RESPONSE TOKEN**')
+    write_output(similarity = similarity_instance,
+            root_path = root_path,
+            remediation_match_tokens = remediation_match_tokens,
+            response_similar_tokens = response_similar_tokens)
 
 
+if __name__ == "__main__":
+    read_file_affix = 'full'
+    method = 'cosine'
+    main()
 
 
