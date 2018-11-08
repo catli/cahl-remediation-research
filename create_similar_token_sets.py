@@ -1,13 +1,9 @@
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
 from gensim.test.utils import common_texts, get_tmpfile, datapath
-import pandas as pd
 import numpy as np
 import os
 # visualization 
-from sklearn.manifold import TSNE
-import matplotlib
-import matplotlib.pyplot as plt
 import csv
 import time
 import pdb
@@ -33,6 +29,7 @@ class CreateSimilarityToken:
 
 
     def create_unique_problem_type_token(self):
+        # TODO: generalize for exercise level tokens
         '''
             Create a list of unique problem type tokens
             Input:  a list of all exercise - problemtype - is response correct
@@ -217,7 +214,7 @@ def main():
                     sample_number = 1,
                     target_vectors = similarity_instance.response_vectors,
                     target_tokens = similarity_instance.response_tokens,
-                    comparison_vectors =similarity_instance.response_vectors,
+                    comparison_vectors = similarity_instance.response_vectors,
                     comparison_tokens = similarity_instance.response_tokens)
     print('***CREATE RESPONSE TOKEN**')
     write_output(similarity = similarity_instance,
@@ -229,7 +226,7 @@ def main():
 if __name__ == "__main__":
     read_file_affix = 'full'
     method = 'euclidean'
-    remediation_sample_number = 1
+    remediation_sample_number = 5
     main()
 
 
