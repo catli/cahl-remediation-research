@@ -12,188 +12,14 @@ import csv
 import time
 import pdb
 
-##########################################
-# Functions to calculate cosine similarity 
-def calculate_cosine_similarity(vectors_i, vectors_j = None):
-    '''
-        create the cosine similarity matrix between each possible vectors set
-        i and j. If vectors_j is None, then assume vectors_i 
-        compared against vectors in the same set. When vectors_j is None,
-        then assume vector set i compared against a different vector set j
-        Output: vector representing cosine similarity of size I x J
-            each row i and column has value =  v_i (v_j.T) / ||v_i|| * ||v_j|| 
-    '''
-    # if second set of vectors is none, assume finding cosine similarity
-    # assume each vector compared against other vectors in vectors_i
-    if vectors_j is None:
-        vectors_j = vectors_i
-    vector_dot_product = np.dot(vectors_i, vectors_j.T)
-    inv_norm = find_inv_norm_product(vectors_i, vectors_j)
-    # use hadamard multiplication to calculate multiplication
-    return np.multiply(vector_dot_product, inv_norm)
 
-def find_inv_norm_product(vectors_i, vectors_j = None):
-    '''
-        input: given two sets of vectors
-        output: the product of norms for each possible i and j combination
-            each row i and column j has value =  ||v_i|| * ||v_j|| 
-    '''
-    inv_norm_i = find_inv_norm_of_matrix(vectors_i)
-    inv_norm_j = find_inv_norm_of_matrix(vectors_j)
-    return np.dot(inv_norm_i[:,None], inv_norm_j[None,:])
-
-def find_inv_norm_of_matrix( vectors):
-    '''
-        intput: array of vectors
-        output: norm for a set of vectors
-    '''
-    vec_norm = [np.linalg.norm(vector) for vector in vectors]
-    return 1/np.array(vec_norm)
-
-
-##########################################
-# Functions to calculate euclidean distance
-def calculate_euclidean_distance(vectors_i, vectors_j = None):
-    '''
-        create the euclidean distance between each possible vectors set
-        i and j. If vectors_j is None, then assume vectors_i
-        compared against vectors in the same set. When vectors_j is None,
-        then assume vector set i compared against a different vector set j.
-        vector set i need to have the same number of oclumns as vector set j
-        Output: vector representing euclidean distance of size I x J
-    '''
-    # if second set of vectors is none, assume finding euclidean distance
-    # assume each vector compared against other vectors in vectors_i
-    if vectors_j is None:
-        vectors_j = vectors_i
-    # subtract every vectors_i from every possible vectors_j
-    euclidean_norms = find_euclidean_norm(vectors_i, vectors_j)
-    # use hadamard multiplication to calculate multiplication
-    return euclidean_norms
-
-def find_euclidean_norm(vectors_i, vectors_j):
-    '''
-        input: given two sets of vectors, vectors i and vectors j
-            with same number of columns. where i has dimension
-            I x E and j has dimension J x E
-        output: a matrix with the euclidean norm comparing every vector in
-            vectors i against every vector in vectors j, with dimension IxJ
-    '''
-    euclidean_norms =[]
-    for vector_i in vectors_i:
-        vec_norm = find_vector_euclidean_norm(vector_i, vectors_j)
-        euclidean_norms.append(vec_norm)
-    return euclidean_norms
-
-def find_vector_euclidean_norm( vector_i, vectors_j):
-    '''
-        input: a single vector_i and a set of vectors_j, with same number
-            of columns
-        output: the square distance 
-            for each column j value = || v_i - v_j || 
-    '''
-    diff_vectors = vector_i - vectors_j
-    vec_norm = [np.linalg.norm(vector) for vector in diff_vectors]
-    return vec_norm
-
-##########################################
-# Functions find the highest similarity
-def find_the_max_loc(similarity_array, num_loc):
-    '''
-        For each row of the data array, find the location of the top {num}
-        values and return a list of the location
-    '''
-    similarity_item_num  = similarity_array.shape[1]
-    if num_loc > similarity_item_num:
-        # if the num of similar item retrieved is greater than the available item
-        # than set to num of similar item
-        num_loc = similarity_item_num
-    top = np.argpartition(similarity_array, -num_loc)[:, -num_loc:]
-    return top
-
-def find_the_min_loc(similarity_array, num_loc):
-    '''
-        For each row of the data array, find the location of the top {num}
-        values and return a list of the location
-    '''
-    least = np.argpartition(similarity_array, num_loc)[:, :num_loc]
-    return least
-
-def sample_highest_similarity_token_excl_self(target_token, response_tokens, similarity_locs, sample_number):
-    '''
-        Input: target token, entire set of response tokens and location highest similarity
-            response tokens
-        Output: the most similar token to the target token
-        Exclude any similar token that are exact matches of target
-            and any tokens where the exercise matches
-    '''
-    similar_tokens = [response_tokens[similarity_loc] for similarity_loc in similarity_locs]
-    # find the target exercise (remove the problem type)
-    target_exercise = target_token.split("|")[0]
-    # exclude similar tokens that below to the same exercise
-    # as the target
-    # [TODO]: make this flexible so the exclusion
-    filtered_similar_tokens = filter(lambda x: target_exercise!=x.split("|")[0],
-                        similar_tokens)
-    # if more than one similar token selected
-    # then select the last one in the sorted list
-    # sample 5, 10, 20 
-    if len(filtered_similar_tokens)>1:
-        filtered_similar_tokens = filtered_similar_tokens[-sample_number: ]
-    return filtered_similar_tokens
-
-
-##########################################
-# Functions to read and write files
-
-def read_embedding_vectors(file_name):
-    '''
-        read in the response embedding vector files
-        these were stored using np.savetxt (.out)
-        return a matrix of embedding vectors
-        # TESTING
-    '''
-    path = os.path.expanduser(file_name+'.out')
-    response_vectors = np.loadtxt(path, delimiter = ',')
-    return response_vectors
-
-def read_tokens(file_name):
-    '''
-        read in the flat file containing the list of response tokens
-        return an array of response tokens associated with embedding vectors
-    '''
-    path = os.path.expanduser(file_name+'.csv')
-    reader = open(path,'r')
-    response_tokens = []
-    for line in reader:
-        # drop any quotes in the token
-        clean_line = line.replace("'","").replace('"','')
-        response_tokens.append(clean_line.replace("'","").strip())
-    return response_tokens
-
-def write_token_file(path, file_name, tokens):
-    '''write individual tokens into flat file. Estimated time: 1.5 sec for 1M rows'''
-    path = os.path.expanduser(path+file_name+'.csv')
-    print(path)
-    open_file = open(path, "w")
-    with open_file:
-        [open_file.write(token + '\n') for token in tokens]
-
-def write_vector_file(path, file_name, vectors):
-    path = os.path.expanduser(path+file_name+'.out')
-    print(path)
-    np.savetxt(path, vectors, delimiter = ',')
-
-def write_similarity_token_file(path, file_name, similarity_tokens):
-    '''write tokens into flat file, can handle a tuple of tokens per line for similarity tokens'''
-    path = os.path.expanduser(path+file_name+'.tsv')
-    print(path)
-    open_file = open(path, "w")
-    with open_file:
-        # [ open_file.write(token[0] + '\t' + token[1])
-        #     for token in similarity_tokens]
-        csvwriter = csv.writer(open_file, delimiter = '\t')
-        csvwriter.writerows(similarity_tokens)
+from util_functions import find_most_similar_item_between_vectors
+from util_functions import sample_highest_similarity_token_excl_self
+from util_functions import read_embedding_vectors
+from util_functions import read_tokens
+from util_functions import write_token_file
+from util_functions import write_vector_file
+from util_functions import write_similarity_token_file
 
 
 class CreateSimilarityToken:
@@ -275,44 +101,17 @@ class CreateSimilarityToken:
         Using either euclidean distance or cosine distance function
         '''
         response_similarity_tokens = []
-        if method == "cosine":
-            # create a map of min cosine distace where each row i and
-            # column j represents the similarity between vector i
-            # in the set of target vectors and vector j in the
-            # comparison vectors set
-            # similarity location find the location of
-            # the (num_loc)th highest cosine similarity
-            similarity_array = calculate_cosine_similarity(
-                                vectors_i = target_vectors,
-                                vectors_j = comparison_vectors)
-            similarity_loc = find_the_max_loc(
-                                similarity_array = similarity_array,
-                                num_loc = 100)
-        else:
-            # create a map of min euclidean distace where each row i and
-            # column j represents the similarity between vector i 
-            # in the set of target vectors and vector j in the 
-            # comparison vectors set
-            # similarity location find the location of 
-            # the (num_loc)th small euclidean distance
-            similarity_array = calculate_euclidean_distance(
-                                vectors_i = target_vectors,
-                                vectors_j = comparison_vectors)
-            similarity_loc = find_the_min_loc(
-                                similarity_array = similarity_array,
-                                num_loc = 100)
+        similarity_loc = find_most_similar_item_between_vectors(method = method,
+                        num_loc = 100, 
+                        vectors_i = target_vectors,
+                        vectors_j = comparison_vectors)
         for i, token in enumerate(target_tokens):
             # for each token, identify the location of similarity token
             vectors_most_similar_loc = similarity_loc[i]
             # the loc specifies the location of the highest similarity
-            if method == "cosine":
-                similar_token = sample_highest_similarity_token_excl_self(token,
-                                comparison_tokens, vectors_most_similar_loc,
-                                sample_number = sample_number)
-            else:
-                similar_token = sample_highest_similarity_token_excl_self(token,
-                                comparison_tokens, vectors_most_similar_loc, 
-                                sample_number = sample_number)
+            similar_token = sample_highest_similarity_token_excl_self(token,
+                comparison_tokens, vectors_most_similar_loc, method,
+                sample_number = sample_number)
             response_similarity_tokens.append((token, similar_token))
         return response_similarity_tokens
 
@@ -393,12 +192,11 @@ def write_output( similarity,  root_path, **kwargs):
 # [TODO] create the average exercise embedding
 # [TODO] run and create same output for exercise embedding
 
-# RUN TEST WHEN RUNNING MODEL
-# tests_create_similarity_token()
-
 def main():
     root_path = os.path.split(os.getcwd())[0] + '/'
     print('root path: '+ root_path)
+    print('method: '+ method)
+    print('sample_number: ' +str(remediation_sample_number))
     response_vectors = read_embedding_vectors(root_path +
                             'cahl_output/embed_vectors_' + read_file_affix)
     response_tokens = read_tokens(root_path +
@@ -410,8 +208,9 @@ def main():
                     sample_number = remediation_sample_number,
                     target_vectors = similarity_instance.learning_vectors,
                     target_tokens = similarity_instance.learning_state_tokens,
-                    comparison_vectors =similarity_instance.response_vectors,
-                    comparison_tokens = similarity_instance.response_tokens)
+                    # change to compare against learning state tokens
+                    comparison_vectors = similarity_instance.learning_vectors,
+                    comparison_tokens = similarity_instance.learning_state_tokens,)
 
     # find match between learning staste and response tokens
     response_similar_tokens = similarity_instance.find_similar_tokens(method = method,
@@ -429,8 +228,8 @@ def main():
 
 if __name__ == "__main__":
     read_file_affix = 'full'
-    method = 'cosine'
-    remediation_sample_number = 5
+    method = 'euclidean'
+    remediation_sample_number = 1
     main()
 
 

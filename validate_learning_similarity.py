@@ -207,7 +207,7 @@ def write_sample_output_file(analysis_path, file_name, output):
     '''
         write the random sample as an output file
     '''
-    path = os.path.expanduser(analysis_path + file_name+'.csv')
+    path = os.path.expanduser(analysis_path + file_name +'.csv')
     print(path)
     open_file = open(path, "w")
     with open_file:
@@ -231,14 +231,14 @@ def write_accuracy_output_file(analysis_path, file_name, avg_matches, accuracy):
 
 
 
-def print_and_output_sample(analysis_path, model_accuracy_output, prefix = '' ):
+def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
     '''
         print sample and output
     '''
     avg_match = calculate_accuracy_rate(model_accuracy_output, 'avg_match')
     is_match = calculate_accuracy_rate(model_accuracy_output, 'is_match')
     write_accuracy_output_file(analysis_path,
-                file_name = '_accuracy_' + prefix,
+                file_name = '_accuracy_' + affix,
                 avg_matches = avg_match,
                 accuracy = is_match)
     # Printout a sample of True and False exercises
@@ -247,7 +247,7 @@ def print_and_output_sample(analysis_path, model_accuracy_output, prefix = '' ):
                         max_sample = 10,
                         is_true_match = True)
     write_sample_output_file( analysis_path,
-                file_name = '_true_sample_'+ prefix,
+                file_name = '_true_sample_'+ affix,
                 output = true_sample)
 
     false_sample = output_random_sample(
@@ -255,7 +255,7 @@ def print_and_output_sample(analysis_path, model_accuracy_output, prefix = '' ):
                         max_sample = 10,
                         is_true_match = False)
     write_sample_output_file(analysis_path,
-                file_name =  '_false_sample_'+ prefix,
+                file_name =  '_false_sample_'+ affix,
                 output = false_sample)
 
 
@@ -272,7 +272,8 @@ code_path = root_path + 'cahl_remediation_research' + '/'
 prerequisites = read_prerequisite_data('prerequisites')
 remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
 model_accuracy_output = check_model_accuracy(prerequisites, remediation_match)
-print_and_output_sample(analysis_path = analysis_path, model_accuracy_output = model_accuracy_output)
+print_and_output_sample(analysis_path = analysis_path,
+                        model_accuracy_output = model_accuracy_output)
 
 subject_exercises = find_exercise_for_specific_subject(
                         subject = 'pre-algebra',
@@ -280,8 +281,10 @@ subject_exercises = find_exercise_for_specific_subject(
                         topic_file_path = code_path)
 subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
 subject_model_accuracy_output = check_model_accuracy(prerequisites= subject_prerequisites,
-                                                                model_matches = remediation_match)
-print_and_output_sample(analysis_path = analysis_path, model_accuracy_output = subject_model_accuracy_output)
+                                                        model_matches = remediation_match)
+print_and_output_sample(analysis_path = analysis_path,
+                        model_accuracy_output = subject_model_accuracy_output,
+                        affix = 'prealgebra')
 
 
 
