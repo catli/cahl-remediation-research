@@ -407,7 +407,7 @@ def main():
 
     # find match between learning staste and response tokens
     remediation_match_tokens = similarity_instance.find_similar_tokens(method = method,
-                    sample_number = 5,
+                    sample_number = remediation_sample_number,
                     target_vectors = similarity_instance.learning_vectors,
                     target_tokens = similarity_instance.learning_state_tokens,
                     comparison_vectors =similarity_instance.response_vectors,
@@ -429,7 +429,8 @@ def main():
 
 if __name__ == "__main__":
     read_file_affix = 'full'
-    method = 'euclidean'
+    method = 'cosine'
+    remediation_sample_number = 5
     main()
 
 
