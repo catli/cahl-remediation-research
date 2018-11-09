@@ -69,10 +69,10 @@ def main():
     exercise_tokens, exercise_vectors = average_vectors_by_exercise(grouped_embeddings)
 
     write_token_file( path = output_path,
-               file_name = 'embedding_index_exercise',
+               file_name = 'embed_index_exercise',
                tokens = exercise_tokens)
     write_vector_file( path = output_path,
-               file_name = 'embedding_vectors_exercise',
+               file_name = 'embed_vectors_exercise',
                vectors = exercise_vectors)
 
 

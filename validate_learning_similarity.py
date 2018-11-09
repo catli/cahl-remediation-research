@@ -60,7 +60,6 @@ def read_learning_similarity_data(file_name, file_path):
                 learning_similarity_exercises[exercise_key] = similar_exercise
         except:
             learning_similarity_exercises[exercise_key] = similar_exercise
-            pdb.set_trace()
         #     learning_similarity_exercises[exercise_key] = similar_exercise
     return learning_similarity_exercises
 

@@ -39,8 +39,8 @@ class CreateSimilarityToken:
         '''
         undup_problem_type_tokens = []
         for token_array in self.response_tokens:
-             new_token = "|".join(token_array.split('|')[0:-1])
-             undup_problem_type_tokens.append(new_token)
+            new_token = "|".join(token_array.split('|')[0:-1])
+            undup_problem_type_tokens.append(new_token)
         self.problem_type_tokens = list(set(undup_problem_type_tokens))
 
     def create_learning_state_embedding(self):
@@ -192,8 +192,10 @@ def write_output( similarity,  root_path, **kwargs):
 def main():
     root_path = os.path.split(os.getcwd())[0] + '/'
     print('root path: '+ root_path)
+    print('read file: '+ read_file_affix)
     print('method: '+ method)
     print('sample_number: ' +str(remediation_sample_number))
+    print('nearest comparison: ' + find_nearest_comparison)
     response_vectors = read_embedding_vectors(root_path +
                             'cahl_output/embed_vectors_' + read_file_affix)
     response_tokens = read_tokens(root_path +
@@ -201,13 +203,22 @@ def main():
     similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
 
     # find match between learning staste and response tokens
-    remediation_match_tokens = similarity_instance.find_similar_tokens(method = method,
-                    sample_number = remediation_sample_number,
-                    target_vectors = similarity_instance.learning_vectors,
-                    target_tokens = similarity_instance.learning_state_tokens,
-                    # change to compare against learning state tokens
-                    comparison_vectors = similarity_instance.learning_vectors,
-                    comparison_tokens = similarity_instance.learning_state_tokens,)
+    if find_nearest_comparison == 'response':
+        remediation_match_tokens = similarity_instance.find_similar_tokens(method = method,
+                        sample_number = remediation_sample_number,
+                        target_vectors = similarity_instance.learning_vectors,
+                        target_tokens = similarity_instance.learning_state_tokens,
+                        # change to compare against learning state tokens
+                        comparison_vectors = similarity_instance.response_vectors,
+                        comparison_tokens = similarity_instance.response_tokens)
+    elif find_nearest_comparison == 'learn':
+        remediation_match_tokens = similarity_instance.find_similar_tokens(method = method,
+                        sample_number = remediation_sample_number,
+                        target_vectors = similarity_instance.learning_vectors,
+                        target_tokens = similarity_instance.learning_state_tokens,
+                        # change to compare against learning state tokens
+                        comparison_vectors = similarity_instance.learning_vectors,
+                        comparison_tokens = similarity_instance.learning_state_tokens)
 
     # find match between learning staste and response tokens
     response_similar_tokens = similarity_instance.find_similar_tokens(method = method,
@@ -223,10 +234,12 @@ def main():
             response_similar_tokens = response_similar_tokens)
 
 
+
 if __name__ == "__main__":
-    read_file_affix = 'full'
-    method = 'euclidean'
-    remediation_sample_number = 5
+    read_file_affix = 'exercise'
+    method = 'cosine'
+    find_nearest_comparison = 'response' # response, learn (True-False)
+    remediation_sample_number = 1
     main()
 
 
