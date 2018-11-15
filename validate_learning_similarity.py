@@ -1,7 +1,8 @@
-import os
-import numpy as np
-import csv
 import ast
+import csv
+import json
+import numpy as np
+import os
 import pdb
 
 '''
@@ -10,19 +11,32 @@ Script to validate the output against the manually entered prerequisites
 '''
 
 
-def read_prerequisite_data(file_name):
+def read_prerequisite_data(file_name, is_json_file=True):
     '''
         read in the prerequisite data
         as a dictionary with the name of each target exercise
         as the key and the list of prerequisite exercises as an array
         example: {'multiplication':['addition','counting']}
     '''
-    path = os.path.expanduser(file_name+'.csv')
+    if is_json_file:
+        extension = '.json'
+    else:
+        extension = 'csv'
+
+    path = os.path.expanduser(file_name+extension)
     reader = open(path,'r')
+
+    if is_json_file:
+        prerequisites = json.load(reader)
+    else:
+        prerequisites = load_prereq_csv_to_dictionary(reader)
+    return prerequisites
+
+
+def load_prereq_csv_to_dictionary(reader):
     prerequisites = {}
     for line in reader:
         # split line by comma delimitation
-        # [TODO] do we need to split line on space as well as comma
         splitline = line.strip().split(",")
         try:
             prerequisites[splitline[0]].append(splitline[1])
@@ -38,6 +52,12 @@ def read_learning_similarity_data(file_name, file_path):
         as a dictionary with the name of each target exercise
         as the key and the list of potential prerequisite exercises
         along with the problem type
+
+        # [TODO] redo so we store similar tokens by problem type
+        #    rather than storing by exercise
+        #    we can then find the accuracy rate on a learning token level
+        #    rather than on the exercise level
+
     '''
     # Notes for steps:
     # read in each line for the learning similarity data
@@ -48,19 +68,10 @@ def read_learning_similarity_data(file_name, file_path):
         splitline = line.strip().split("\t")
         # split the text by "|" to eliminate problem type, keeping only
         # name of exercise
-        exercise_key = splitline[0].split('|')[0]
+        exercise_key = splitline[0]
         # evaluate the set of matches as an array
         similar_exercise = ast.literal_eval(splitline[1])
-        try:
-            if exercise_key in learning_similarity_exercises:
-                [learning_similarity_exercises[exercise_key].append(exercise) for exercise
-                    in similar_exercise]
-            else:
-                # if multiple matches created for the same exercise
-                learning_similarity_exercises[exercise_key] = similar_exercise
-        except:
-            learning_similarity_exercises[exercise_key] = similar_exercise
-        #     learning_similarity_exercises[exercise_key] = similar_exercise
+        learning_similarity_exercises[exercise_key] = similar_exercise
     return learning_similarity_exercises
 
 
@@ -115,118 +126,73 @@ def read_topic_tree_file(topic_file_name, topic_file_path):
 
 
 def check_model_accuracy(prerequisites, model_matches):
-    # [TODO] match the accuracy against
-    # exercise_key = []
-    # accuracy = []
-    # avg_matches = []
-    # true_exercises = []
-    # false_exercises = []
-    # same_exercises = []
+    '''
+        Create a precision and recall metric
+        For each model match token (by problem type)
+
+        [TODO]
+        Precision: did we identify the right prerequisite in the options?
+        Token Recall: what % of the right prerequisites were predicted?
+            (on a token level)
+        Exercise Recall: on the exercise level
+
+    '''
     model_accuracy_output = {}
-    for exercise in prerequisites:
+    for item in model_matches:
+        # selected exercise
+        exercise = item.split('|')[0]
+
         try:
-            remediation_match = model_matches[exercise]
+            true_prereqs = prerequisites[exercise]
         except KeyError:
             continue
-        match = False
-        exercise_prereqs = prerequisites[exercise]
-        is_matches =[]
-        # for prereq in exercise_prereqs:
-        for item in remediation_match:
-            is_match = [ prereq == item.split("|")[0]
-                for prereq in exercise_prereqs]
-            any_match = max(is_match)
-            match = ( any_match if any_match else match)
-            is_matches.append(any_match)
-        avg_match = np.mean(is_matches)
-        model_accuracy_output[exercise] = {}
-        # if remediation_match == exercise: same_exercises.append(exercise)
-        #     model_accuracy_output[exercise]['same_exercise'] = True
-        model_accuracy_output[exercise]['avg_match'] = avg_match
-        model_accuracy_output[exercise]['is_match'] = match
-        model_accuracy_output[exercise]['true_prerequisite'] = exercise_prereqs
-        model_accuracy_output[exercise]['remediation_match'] = remediation_match
-        # if exercise =='model-with-one-step-equations-and-solve':
-        #     pdb.set_trace()
-        # # exercise_key.append(exercise)
-        # if match: true_exercises.append(exercise)
-        # if not match: false_exercises.append(exercise)
-        # if remediation_match == exercise: same_exercises.append(exercise)
-    # return accuracy, avg_matches, true_exercises, false_exercises, same_exercises
+
+        predicted_prereqs = model_matches[item]
+        # determine which of the true prereqs are matched
+        # and at what levels they are matched
+        is_match, first_match_level = return_match_logic(true_prereqs, predicted_prereqs)
+        is_item_match = max(is_match)
+        # iterate through predicted prereqs predicted_prereqs
+        # if any of the prereqs match
+        if exercise not in model_accuracy_output:
+            model_accuracy_output[exercise] = {}
+            model_accuracy_output[exercise]['is_any_match'] = max(is_match)
+        else:
+            any_match = model_accuracy_output[exercise]['is_any_match']
+            model_accuracy_output[exercise]['is_any_match'] = max(any_match,
+                                                                is_item_match)
+        model_accuracy_output[exercise][item] = {}
+        model_accuracy_output[exercise][item]['precision'] = np.mean(is_item_match)
+        model_accuracy_output[exercise][item]['recall'] = np.mean(is_match)
+        model_accuracy_output[exercise][item]['true_prereqs'] = true_prereqs
+        model_accuracy_output[exercise][item]['predicted_prereq'] = predicted_prereqs
+        model_accuracy_output[exercise][item]['match_level'] = first_match_level
     return model_accuracy_output
 
 
 
-def calculate_accuracy_rate(model_accuracy_output, accuracy_col):
+def return_match_logic(true_prereqs, predicted_prereqs):
     '''
-        calculate the mean accuracy rate
+        see if there are any matches in the predicted
+        is_match has an entry for each true prereqs and
+        populates whehter any of the predicted exercises match
     '''
-    accuracy_outputs = [model_accuracy_output[exercise][accuracy_col]
-                            for exercise in model_accuracy_output]
-    return np.mean(accuracy_outputs)
-
-
-def output_random_sample(model_accuracy_output, max_sample, is_true_match):
-    '''
-        randomly sample a series of exercises and print the output
-    '''
-    exercises = [exercise for exercise in model_accuracy_output
-                    if model_accuracy_output[exercise]['is_match'] == is_true_match]
-    max_size = min(len(exercises), max_sample)
-    sample_exercises = np.random.choice(exercises, size = max_size, replace=False)
-    sample_output = []
-    for exercise in sample_exercises:
-        sample_output.append(
-                [exercise,
-                model_accuracy_output[exercise]['true_prerequisite'],
-                model_accuracy_output[exercise]['remediation_match'],
-                model_accuracy_output[exercise]['avg_match']]
-            )
-    return sample_output
-
-
-
-
-# def output_random_sample(exercises, max_sample, prerequisites, remediation_match):
-#     '''
-#         randomly sample a series of exercises and print the output
-#     '''
-#     max_size = min(len(exercises), max_sample)
-#     sample_exercises = np.random.choice(exercises, size = max_size, replace=False)
-#     sample_output = []
-#     for exercise in sample_exercises:
-#         sample_output.append(
-#             [exercise,prerequisites[exercise],remediation_match[exercise]])
-#     return sample_output
-
-
-
-
-def write_sample_output_file(analysis_path, file_name, output):
-    '''
-        write the random sample as an output file
-    '''
-    path = os.path.expanduser(analysis_path + file_name +'.csv')
-    print(path)
-    open_file = open(path, "w")
-    with open_file:
-        csvwriter = csv.writer(open_file, delimiter = ',')
-        csvwriter.writerow(['exercise','true prerequisite','model matches','avg_match'])
-        csvwriter.writerows(output)
-
-
-
-def write_accuracy_output_file(analysis_path, file_name, avg_matches, accuracy):
-    '''
-        write the random sample as an output file
-    '''
-    path = os.path.expanduser(analysis_path + file_name+'.csv')
-    print(path)
-    open_file = open(path, "w")
-    with open_file:
-        csvwriter = csv.writer(open_file, delimiter = ',')
-        csvwriter.writerow(['Avg rate of matching','% with any match' ])
-        csvwriter.writerow([avg_matches,accuracy])
+    # transform predicted problem type prereqs to exercise level
+    predicted_exercise = [ prereq.split('|')[0]
+            for prereq in predicted_prereqs ]
+    is_match = []
+    match_levels = []
+    for i,level in enumerate(true_prereqs):
+        # Iterate through true prerequisites and for each
+        for true_prereq in level:
+            is_true_prereq_match = true_prereq in predicted_exercise
+            is_match.append(is_true_prereq_match)
+            if is_true_prereq_match: match_levels.append(i)
+    if len(match_levels)>0:
+        first_match_level = min(match_levels)
+    else:
+        first_match_level = None
+    return is_match, first_match_level
 
 
 
@@ -234,12 +200,16 @@ def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
     '''
         print sample and output
     '''
-    avg_match = calculate_accuracy_rate(model_accuracy_output, 'avg_match')
-    is_match = calculate_accuracy_rate(model_accuracy_output, 'is_match')
+    precision = calculate_accuracy_rate(model_accuracy_output, 'precision')
+    recall = calculate_accuracy_rate(model_accuracy_output, 'recall')
+    avg_match_level = calculate_accuracy_rate(model_accuracy_output, 'match_level')
+    exercise_recall = calculate_exercise_prereq_recall(model_accuracy_output)
     write_accuracy_output_file(analysis_path,
                 file_name = '_accuracy_' + affix,
-                avg_matches = avg_match,
-                accuracy = is_match)
+                precision = precision,
+                recall = recall,
+                exercise_recall = exercise_recall,
+                match_level = avg_match_level)
     # Printout a sample of True and False exercises
     true_sample = output_random_sample(
                         model_accuracy_output = model_accuracy_output,
@@ -259,32 +229,148 @@ def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
 
 
 
+def calculate_accuracy_rate(model_accuracy_output, accuracy_col):
+    '''
+        calculate the mean accuracy rate
+        can be used to calculate avg precision or recall rate
+    '''
+    accuracy_outputs = []
+    for exercise in model_accuracy_output:
+        for item in model_accuracy_output[exercise]:
+            if item!='is_any_match':
+                accuracy = model_accuracy_output[exercise][item][accuracy_col]
+                # only append if entry is not None
+                if accuracy!=None: accuracy_outputs.append(accuracy)
+    return np.mean(accuracy_outputs)
+
+
+def calculate_exercise_prereq_recall(model_accuracy_output):
+    '''
+        calculate the mean accuracy rate
+    '''
+    exercise_recall = []
+    for exercise in model_accuracy_output:
+        is_match = model_accuracy_output[exercise]['is_any_match']
+        exercise_recall.append(np.mean( is_match ))
+    return np.mean(exercise_recall)
 
 
 
-root_path = os.path.split(os.getcwd())[0] + '/'
-analysis_path = root_path + 'cahl_analysis' + '/'
-code_path = root_path + 'cahl_remediation_research' + '/'
+
+def write_accuracy_output_file(analysis_path, file_name, precision, recall,
+    exercise_recall, match_level):
+    '''
+        write the random sample as an output file
+    '''
+    path = os.path.expanduser(analysis_path + file_name+'.csv')
+    print(path)
+    open_file = open(path, "w")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = ',')
+        csvwriter.writerow(['precision by response',
+                'recall by response', 'recall by exercise',
+                'avg level of matched prereq'])
+        csvwriter.writerow([precision, recall, exercise_recall, match_level])
 
 
-####################################
-prerequisites = read_prerequisite_data('prerequisites')
-remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
-model_accuracy_output = check_model_accuracy(prerequisites, remediation_match)
-print_and_output_sample(analysis_path = analysis_path,
-                        model_accuracy_output = model_accuracy_output)
 
-subject_exercises = find_exercise_for_specific_subject(
-                        subject = 'pre-algebra',
-                        topic_file_name = 'math_topic_tree',
-                        topic_file_path = code_path)
-subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
-subject_model_accuracy_output = check_model_accuracy(prerequisites= subject_prerequisites,
-                                                        model_matches = remediation_match)
-print_and_output_sample(analysis_path = analysis_path,
-                        model_accuracy_output = subject_model_accuracy_output,
-                        affix = 'prealgebra')
+def output_random_sample(model_accuracy_output, max_sample, is_true_match):
+    '''
+        randomly sample a series of exercises and print the output
+    '''
+    items = []
+    for exercise in model_accuracy_output:
+        for item in model_accuracy_output[exercise]:
+            if ( item!='is_any_match'
+                and model_accuracy_output[exercise][item]['precision'] == is_true_match):
+                items.append(item)
+    max_size = min(len(items), max_sample)
+    sample_items = np.random.choice(items, size = max_size, replace=False)
+    sample_output = []
+    for item in sample_items:
+        exercise = item.split('|')[0]
+        sample_output.append(
+                [item,
+                model_accuracy_output[exercise][item]['true_prereqs'],
+                model_accuracy_output[exercise][item]['predicted_prereq'],
+                model_accuracy_output[exercise][item]['recall'],
+                model_accuracy_output[exercise][item]['match_level']]
+            )
+    return sample_output
 
+
+
+
+def write_sample_output_file(analysis_path, file_name, output):
+    '''
+        write the random sample as an output file
+        with tab delimited since there may be arrays written to columns
+    '''
+    path = os.path.expanduser(analysis_path + file_name +'.tsv')
+    print(path)
+    open_file = open(path, "w")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = '\t')
+        csvwriter.writerow(['item','true prerequisite','model prediction','recall','match_level'])
+        csvwriter.writerows(output)
+
+
+
+def test_check_model_accuracy():
+    '''
+        check model accuracy
+    '''
+    test_model_matches = {'addition_2|type_1':['subtraction_2|type1|true','subtaction_1|type2|true'],
+            'addition_2|type_0':['addition_1|type0|false','addition_0|type1|false']}
+    test_true_prerequisites = {
+            'addition_2':[['addition_1'],['counting']]
+            }
+    test_model_accuracy_output = check_model_accuracy(test_true_prerequisites, test_model_matches)
+
+    print(test_model_accuracy_output)
+    assert test_model_accuracy_output['addition_2']['addition_2|type_1']['recall'] == 0.0
+    assert test_model_accuracy_output['addition_2']['addition_2|type_1']['precision'] == 0.0
+    assert test_model_accuracy_output['addition_2']['addition_2|type_0']['recall'] == 0.5
+    assert test_model_accuracy_output['addition_2']['addition_2|type_0']['precision'] == 1.0
+    print('PASSES TEST!!')
+
+
+
+def main(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
+    '''
+        create the nearest comparison
+    '''
+    path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + str(remediation_sample_number)
+    root_path = os.path.split(os.getcwd())[0] + '/'
+    analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
+    code_path = root_path + 'cahl_remediation_research' + '/'
+
+
+    ####################################
+    prerequisites = read_prerequisite_data('multilevel_prerequisites')
+    remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
+    model_accuracy_output = check_model_accuracy(prerequisites, remediation_match)
+    print_and_output_sample(analysis_path = analysis_path,
+                            model_accuracy_output = model_accuracy_output)
+
+    subject_exercises = find_exercise_for_specific_subject(
+                            subject = 'pre-algebra',
+                            topic_file_name = 'math_topic_tree',
+                            topic_file_path = code_path)
+    subject_prerequisites = filter_prerequisite_in_subject(prerequisites, subject_exercises)
+    subject_model_accuracy_output = check_model_accuracy(prerequisites= subject_prerequisites,
+                                                            model_matches = remediation_match)
+    print_and_output_sample(analysis_path = analysis_path,
+                            model_accuracy_output = subject_model_accuracy_output,
+                            affix = 'prealgebra')
+
+
+if __name__ == "__main__":
+    read_file_affix = 'full'
+    method = 'cosine'
+    find_nearest_comparison = 'response' # response, learn (True-False)
+    remediation_sample_number = 10
+    main(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
 
 
 
