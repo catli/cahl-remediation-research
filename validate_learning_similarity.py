@@ -180,7 +180,7 @@ def return_match_logic(true_prereqs, predicted_prereqs):
         recoreds whether each one matched with any of the predicted exercises
     '''
     # transform predicted problem type prereqs to exercise level
-    predicted_exercise = [ prereq.split('|')[0]
+    predicted_exercises = [ prereq.split('|')[0]
             for prereq in predicted_prereqs ]
     is_match = []
     match_levels = []
@@ -203,28 +203,29 @@ def return_precision_match(true_prereqs, predicted_exercises):
     is_precision_match = []
     for i, predicted_exercise in enumerate(predicted_exercises):
         # Iterate through the predicted exercises
-        is_predicted_prereq_match =  predicted_exercise in true_prereqs
+        is_predicted_prereq_match = max([predicted_exercise in 
+                prereq for prereq in true_prereqs])
         is_precision_match.append(is_predicted_prereq_match)
     return is_precision_match
 
 
 
 def return_recall_match(true_prereqs, predicted_exercises):
-   '''
+    '''
        what is the match rate for true prereqs
        out of the total prerequisites in the prerequisite ladder
        how many return a mtching token
        matches on the exercise level
-   '''
+    '''
     is_recall_match = []
     match_levels = []
     for i,level in enumerate(true_prereqs):
         # Iterate through true prerequisites and for each
         for true_prereq in level:
-            is_true_prereq_match = true_prereq in predicted_exercise
-            is_match.append(is_true_prereq_match)
+            is_true_prereq_match = true_prereq in predicted_exercises
+            is_recall_match.append(is_true_prereq_match)
             if is_true_prereq_match: match_levels.append(i)
-   return is_recall_match, match_levels
+    return is_recall_match, match_levels
 
 
 
@@ -363,7 +364,7 @@ def test_check_model_accuracy():
     assert test_model_accuracy_output['addition_2']['addition_2|type_1']['recall'] == 0.0
     assert test_model_accuracy_output['addition_2']['addition_2|type_1']['precision'] == 0.0
     assert test_model_accuracy_output['addition_2']['addition_2|type_0']['recall'] == 0.5
-    assert test_model_accuracy_output['addition_2']['addition_2|type_0']['precision'] == 1.0
+    assert test_model_accuracy_output['addition_2']['addition_2|type_0']['precision'] == 0.5
     print('PASSES TEST!!')
 
 
