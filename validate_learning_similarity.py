@@ -150,20 +150,21 @@ def check_model_accuracy(prerequisites, model_matches):
         predicted_prereqs = model_matches[item]
         # determine which of the true prereqs are matched
         # and at what levels they are matched
-        is_match, first_match_level = return_match_logic(true_prereqs, predicted_prereqs)
-        is_item_match = max(is_match)
+        is_recall_match, first_match_level, is_precision_match = return_match_logic(
+                true_prereqs, predicted_prereqs)
+        is_item_match = max(is_recall_match)
         # iterate through predicted prereqs predicted_prereqs
         # if any of the prereqs match
         if exercise not in model_accuracy_output:
             model_accuracy_output[exercise] = {}
-            model_accuracy_output[exercise]['is_any_match'] = max(is_match)
+            model_accuracy_output[exercise]['is_any_match'] = max(is_recall_match)
         else:
             any_match = model_accuracy_output[exercise]['is_any_match']
             model_accuracy_output[exercise]['is_any_match'] = max(any_match,
                                                                 is_item_match)
         model_accuracy_output[exercise][item] = {}
-        model_accuracy_output[exercise][item]['precision'] = np.mean(is_item_match)
-        model_accuracy_output[exercise][item]['recall'] = np.mean(is_match)
+        model_accuracy_output[exercise][item]['precision'] = np.mean(is_precision_match)
+        model_accuracy_output[exercise][item]['recall'] = np.mean(is_recall_match)
         model_accuracy_output[exercise][item]['true_prereqs'] = true_prereqs
         model_accuracy_output[exercise][item]['predicted_prereq'] = predicted_prereqs
         model_accuracy_output[exercise][item]['match_level'] = first_match_level
@@ -174,13 +175,48 @@ def check_model_accuracy(prerequisites, model_matches):
 def return_match_logic(true_prereqs, predicted_prereqs):
     '''
         see if there are any matches in the predicted
-        is_match has an entry for each true prereqs and
-        populates whehter any of the predicted exercises match
+        is_precision_match has an entry for each predicted prereqs
+        is_recall_match has an entry for each true prereqs and
+        recoreds whether each one matched with any of the predicted exercises
     '''
     # transform predicted problem type prereqs to exercise level
     predicted_exercise = [ prereq.split('|')[0]
             for prereq in predicted_prereqs ]
     is_match = []
+    match_levels = []
+    is_recall_match, match_levels = return_recall_match(true_prereqs, predicted_exercises)
+    is_precision_match = return_precision_match(true_prereqs, predicted_exercises)
+    if len(match_levels)>0:
+        first_match_level = min(match_levels)
+    else:
+        first_match_level = None
+    return is_recall_match, first_match_level, is_precision_match
+
+
+def return_precision_match(true_prereqs, predicted_exercises):
+    '''
+        what is the match rate for the predicted prereqs
+        out of the total number of matches per learning token
+        on average what % are matched? 
+        matches on the exercise level
+    '''
+    is_precision_match = []
+    for i, predicted_exercise in enumerate(predicted_exercises):
+        # Iterate through the predicted exercises
+        is_predicted_prereq_match =  predicted_exercise in true_prereqs
+        is_precision_match.append(is_predicted_prereq_match)
+    return is_precision_match
+
+
+
+def return_recall_match(true_prereqs, predicted_exercises):
+   '''
+       what is the match rate for true prereqs
+       out of the total prerequisites in the prerequisite ladder
+       how many return a mtching token
+       matches on the exercise level
+   '''
+    is_recall_match = []
     match_levels = []
     for i,level in enumerate(true_prereqs):
         # Iterate through true prerequisites and for each
@@ -188,11 +224,7 @@ def return_match_logic(true_prereqs, predicted_prereqs):
             is_true_prereq_match = true_prereq in predicted_exercise
             is_match.append(is_true_prereq_match)
             if is_true_prereq_match: match_levels.append(i)
-    if len(match_levels)>0:
-        first_match_level = min(match_levels)
-    else:
-        first_match_level = None
-    return is_match, first_match_level
+   return is_recall_match, match_levels
 
 
 
