@@ -84,9 +84,10 @@ vectors = model.wv.vectors
 vector_index = model.wv.index2word
 print(vector_index)
 
-# store the vectors and the vector index locally 
-write_vector_file('embed_vectors_full', vectors)
-write_token_file('embed_index_full', vector_index)
+# store the vectors and the vector index locally
+write_affix = 'w' + str(window_size) + 'e' + str(embed_size)
+write_vector_file('embed_vectors_full' + write_affix, vectors)
+write_token_file('embed_index_full' + write_affix, vector_index)
 
 end = time.time()
 print(end-start)
