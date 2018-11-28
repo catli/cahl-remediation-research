@@ -315,7 +315,8 @@ def output_random_sample(model_accuracy_output, max_sample, is_true_match):
     for exercise in model_accuracy_output:
         for item in model_accuracy_output[exercise]:
             if ( item!='is_any_match'
-                and model_accuracy_output[exercise][item]['precision'] == is_true_match):
+                and (model_accuracy_output[exercise][item]['precision'] >
+                    0)==is_true_match ):
                 items.append(item)
     max_size = min(len(items), max_sample)
     sample_items = np.random.choice(items, size = max_size, replace=False)
