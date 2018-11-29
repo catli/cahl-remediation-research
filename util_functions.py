@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import csv
-
+import pdb
 
 
 ##########################################
@@ -170,9 +170,7 @@ def sample_highest_similarity_token_excl_self(target_token, response_tokens, sim
     target_exercise = target_token.split("|")[0]
     # exclude similar tokens that below to the same exercise
     # as the target
-    # [TODO]: make this flexible so the exclusion
-    filtered_similar_tokens = filter(lambda x: target_exercise!=x.split("|")[0],
-                        similar_tokens)
+    filtered_similar_tokens = list(filter(lambda x: target_exercise!=x.split("|")[0], similar_tokens))
     # if more than one similar token selected
     # then select the last one in the sorted list
     # sample 5, 10, 20 (for cosine)

@@ -314,9 +314,9 @@ def write_prerequisite_match_file(analysis_path, file_name, model_accuracy_outpu
     for exercise in model_accuracy_output:
         for item in model_accuracy_output[exercise]:
             if item!='is_any_match':
-                predicted_prereqs = model_accuracy_output[exercise][item]['predicted_prereqs']
+                predicted_prereqs = model_accuracy_output[exercise][item]['predicted_prereq']
                 match =  model_accuracy_output[exercise][item]['precision']>0
-                 remediation_match_tf.append((item, predicted_prereqs, match))
+                remediation_match_tf.append((item, predicted_prereqs, match))
     write_similarity_token_file(path = analysis_path, 
             file_name = file_name,
             similarity_tokens = remediation_match_tf)    
@@ -393,7 +393,7 @@ def validate_learning_similarity(read_file_affix, method, find_nearest_compariso
     '''
         create the nearest comparison
     '''
-    path_affix = create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_numbe)
+    path_affix = create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_number)
     root_path = os.path.split(os.getcwd())[0] + '/'
     analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
     code_path = root_path + 'cahl_remediation_research' + '/'
@@ -419,11 +419,13 @@ def validate_learning_similarity(read_file_affix, method, find_nearest_compariso
 
 
 if __name__ == "__main__":
-    read_file_affix = 'full'
+    window_size = 10
+    embed_size = 30
+    read_file_affix = 'full' + 'w' + str(window_size) + 'e' + str(embed_size)
     method = 'cosine'
     find_nearest_comparison = 'response' # response, learn (True-False)
     remediation_sample_number = 10
     validate_learning_similarity(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
-
+    
 
 

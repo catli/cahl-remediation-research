@@ -20,7 +20,8 @@ from util_functions import write_similarity_token_file
 
 class CreateSimilarityToken:
 
-    def __init__(self, embedding_vectors, embedding_tokens):
+    def __init__(self, embedding_vectors, embedding_tokens, learning_state_vectors, learning_state_tokens):
+        # [TODO] add learning state tokens that are read in
         # vectors_file_name, tokens_file_name):
         self.response_vectors = embedding_vectors
         self.response_tokens  = embedding_tokens
@@ -70,6 +71,39 @@ class CreateSimilarityToken:
                 self.missing_learning_tokens.append(token)
 
 
+    def generate_similarity_match(self, find_nearest_comparison, method,
+            sample_number):
+        # find match between learning staste and response tokens
+        if find_nearest_comparison == 'response':
+            match_tokens = self.generate_similarity_tokens(
+                method = method,
+                sample_number = sample_number,
+                target_vectors = self.learning_vectors,
+                target_tokens = self.learning_state_tokens,
+                # change to compare against learning state tokens
+                comparison_vectors = self.response_vectors,
+                comparison_tokens = self.response_tokens)
+        elif find_nearest_comparison == 'learn':
+            match_tokens = self.generate_similarity_tokens(
+                method = method,
+                sample_number = sample_number,
+                target_vectors = self.learning_vectors,
+                target_tokens = self.learning_state_tokens,
+                # change to compare against learning state tokens
+                comparison_vectors = self.learning_vectors,
+                comparison_tokens = self.learning_state_tokens)
+        elif find_nearest_comparison == 'response-response':        
+        # find match between learning staste and response tokens
+            match_tokens = self.generate_similarity_tokens(
+                method = method,
+                sample_number = sample_number,
+                target_vectors = self.response_vectors,
+                target_tokens = self.response_tokens,
+                comparison_vectors = self.response_vectors,
+                comparison_tokens = self.response_tokens)
+        return match_tokens    
+        
+
 
     def generate_similarity_tokens(self, method, target_vectors, target_tokens,
             comparison_vectors, comparison_tokens, sample_number):
@@ -98,6 +132,7 @@ class CreateSimilarityToken:
 
 def test_create_similarity_token():
     # Check that the number of problem type token is same as original data set 
+    # [TODO] update test so that learning state is an input
     test_vectors = np.array([[1,2,2,1],[1,1,0,1],[1,1,2,2.1],
         [-1,-3,1,2],[-1,-2,1,1],[0,1,0,-1],[1,-1,0,1]])
     test_tokens = [
@@ -147,69 +182,63 @@ def test_create_similarity_token():
 
 def write_output( similarity,  root_path, path_affix, **kwargs):
     # write the output
-    analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
+    # [TODO] no need to write learning state tokens
+    # [TODO] just write remediation matches 
+    analysis_path = root_path + '/' +  'cahl_analysis' + '/' + path_affix + '/'
     # create directory if not already exist
     if not os.path.exists(analysis_path):
         os.makedirs(analysis_path)
     # this file should have the same number of state and be in the same order as above
     write_token_file(path = analysis_path, 
-           file_name = 'learning_state_tokens',
-           tokens = similarity.learning_state_tokens)
-   for key, value in kwargs.items():
+        file_name = 'learning_state_tokens',
+        tokens = similarity.learning_state_tokens)
+    for key, value in kwargs.items():
         write_similarity_token_file(path = analysis_path,
-           file_name = key,
-           similarity_tokens = value)
+            file_name = key,
+            similarity_tokens = value)
 
 def create_path_affix(method, find_nearest_comparison, read_file_affix, remediation_sample_number):
     path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + 'r' + str(remediation_sample_number)
     return path_affix
+
+
+def create_file_path(path, file_name, file_affix):
+    return path + file_name + file_affix
 
 #########################################
 # [TODO] create the average exercise embedding
 # [TODO] run and create same output for exercise embedding
 
 def create_similar_token(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
-    root_path = os.path.split(os.getcwd())[0] + '/'
+    root_path = os.path.split(os.getcwd())[0] 
     print('root path: '+ root_path)
     print('read file: '+ read_file_affix)
     print('method: '+ method)
     print('sample_number: ' +str(remediation_sample_number))
     print('nearest comparison: ' + find_nearest_comparison)
-    # [TODO] incorporate window and embedding into read_file_affix 
-    response_vectors = read_embedding_vectors(root_path +
-                            'cahl_output/embed_vectors_' + read_file_affix)
-    response_tokens = read_tokens(root_path +
-                            'cahl_output/embed_index_' + read_file_affix)
-    similarity_instance = CreateSimilarityToken(response_vectors, response_tokens)
+    # [TODO] incorporate window and embedding into read_file_affix
+    output_path = root_path + '/'  + 'cahl_output' + '/'
+    response_vectors = read_embedding_vectors(create_file_path( output_path, 
+                                    'embed_vectors_', read_file_affix))
+    response_tokens = read_tokens(create_file_path( output_path,
+                                    'embed_index_', read_file_affix))
+    learning_state_vectors = read_embedding_vectors(create_file_path( output_path,                                                  'learning_state_vectors_', read_file_affix))
+    learning_state_tokens = read_tokens(create_file_path( output_path,                                                               'learning_state_tokens_', read_file_affix))
+    similarity_instance = CreateSimilarityToken(response_vectors, response_tokens, 
+        learning_state_vectors, learning_state_tokens)
 
     # find match between learning staste and response tokens
-    if find_nearest_comparison == 'response':
-        remediation_match_tokens = similarity_instance.generate_similarity_tokens(
-                        method = method,
-                        sample_number = remediation_sample_number,
-                        target_vectors = similarity_instance.learning_vectors,
-                        target_tokens = similarity_instance.learning_state_tokens,
-                        # change to compare against learning state tokens
-                        comparison_vectors = similarity_instance.response_vectors,
-                        comparison_tokens = similarity_instance.response_tokens)
-    elif find_nearest_comparison == 'learn':
-        remediation_match_tokens = similarity_instance.generate_similarity_tokens(
-                        method = method,
-                        sample_number = remediation_sample_number,
-                        target_vectors = similarity_instance.learning_vectors,
-                        target_tokens = similarity_instance.learning_state_tokens,
-                        # change to compare against learning state tokens
-                        comparison_vectors = similarity_instance.learning_vectors,
-                        comparison_tokens = similarity_instance.learning_state_tokens)
-
+    remediation_match_tokens = similarity_instance.generate_similarity_match(
+                find_nearest_comparison = find_nearest_comparison,
+                method = method,
+                sample_number = remediation_sample_number)
+    
     # find match between learning staste and response tokens
-    response_similar_tokens = similarity_instance.generate_similarity_tokens(
-                    method = method,
-                    sample_number = 1,
-                    target_vectors = similarity_instance.response_vectors,
-                    target_tokens = similarity_instance.response_tokens,
-                    comparison_vectors = similarity_instance.response_vectors,
-                    comparison_tokens = similarity_instance.response_tokens)
+    response_similar_tokens = similarity_instance.generate_similarity_match(
+                find_nearest_comparison = 'response-response',
+                method = method,
+                sample_number = 1)
+    
     print('***CREATE RESPONSE TOKEN**')
     path_affix = create_path_affix(method, find_nearest_comparison, read_file_affix, remediation_sample_number)
   
@@ -222,7 +251,10 @@ def create_similar_token(read_file_affix, method, find_nearest_comparison, remed
 
 
 if __name__ == "__main__":
-    read_file_affix = 'full'
+    # [TODO] append window and embedding to affix 
+    window_size = 10
+    embed_size = 30
+    read_file_affix = 'full' + 'w' + str(window_size) + 'e' + str(embed_size)
     method = 'cosine'
     find_nearest_comparison = 'response' # response, learn (True-False)
     remediation_sample_number = 10

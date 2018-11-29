@@ -44,41 +44,41 @@ def pass_in_arguments():
                      remediation_sample_number = remediation_sample_number)
 
 hyperparameters = { 
-     "hyperparameter1":{"window":5, "embedding":30},
-     "hyperparameter2":{"window":10, "embedding":30},
-     "hyperparameter3":{"window":15, "embedding":30},
-     "hyperparameter4":{"window":20, "embedding":30},
-     "hyperparameter5":{"window":10, "embedding":15},
-     "hyperparameter6":{"window":10, "embedding":20},
-     "hyperparameter7":{"window":10, "embedding":30},
-     "hyperparameter8":{"window":10, "embedding":40}
+     "hyperparameter1":{"window":5, "embedding":30, "read_file_affix":'full'},
+     "hyperparameter2":{"window":10, "embedding":30, "read_file_affix":'full'},
+     "hyperparameter3":{"window":15, "embedding":30, "read_file_affix":'full'},
+     "hyperparameter4":{"window":20, "embedding":30, "read_file_affix":'full'},
+     "hyperparameter5":{"window":10, "embedding":15, "read_file_affix":'full'},
+     "hyperparameter6":{"window":10, "embedding":20, "read_file_affix":'full'},
+     "hyperparameter7":{"window":10, "embedding":30, "read_file_affix":'full'},
+     "hyperparameter8":{"window":10, "embedding":40, "read_file_affix":'full'}
 }
      
 
 
 
 match_parameters = {
-    "responseCosine1":{"read_file_affix": 'full', "method": 'cosine', 
+    "responseCosine1":{ "method": 'cosine', 
         "find_nearest_comparison": 'response', "remediation_sample_number": 1},
-    "responseCosine5":{"read_file_affix": 'full', "method": 'cosine', 
+    "responseCosine5":{ "method": 'cosine', 
          "find_nearest_comparison": 'response', "remediation_sample_number": 5},
-    "responseCosine10": {"read_file_affix": 'full', "method": 'cosine', 
+    "responseCosine10": { "method": 'cosine', 
         "find_nearest_comparison": 'response', "remediation_sample_number": 10},
-    "responseCosine20": {"read_file_affix": 'full', "method": 'cosine', 
+    "responseCosine20": { "method": 'cosine', 
         "find_nearest_comparison": 'response', "remediation_sample_number": 20},
-    "learnCosine1": {"read_file_affix": 'full', "method": 'cosine', 
+    "learnCosine1": { "method": 'cosine', 
         "find_nearest_comparison": 'learn', "remediation_sample_number": 1},
-    "learnCosine5": {"read_file_affix": 'full', "method": 'cosine', 
+    "learnCosine5": { "method": 'cosine', 
         "find_nearest_comparison": 'learn', "remediation_sample_number": 5},
-    "learnCosine10": {"read_file_affix": 'full', "method": 'cosine', 
+    "learnCosine10": { "method": 'cosine', 
         "find_nearest_comparison": 'learn', "remediation_sample_number": 10},
-    "learnCosine20": {"read_file_affix": 'full', "method": 'cosine', 
+    "learnCosine20": { "method": 'cosine', 
         "find_nearest_comparison": 'learn', "remediation_sample_number": 20}
-   # "responseEuclidean1": {"read_file_affix": 'full', "method": 'euclidean', 
+   # "responseEuclidean1": { "method": 'euclidean', 
    #     "find_nearest_comparison": 'response', "remediation_sample_number": 1},
-   # "responseEuclidean5": {"read_file_affix": 'full', "method": 'euclidean', 
+   # "responseEuclidean5": { "method": 'euclidean', 
    #     "find_nearest_comparison": 'response', "remediation_sample_number": 5},
-   # "responseEuclidean10": {"read_file_affix": 'full', "method": 'euclidean', 
+   # "responseEuclidean10": { "method": 'euclidean', 
    #     "find_nearest_comparison": 'response', "remediation_sample_number": 10}
 }
 
@@ -91,7 +91,9 @@ for hyper in hyperparameters:
     embed_size = hyperparameters[hyper]["embedding"]
     iter_num = 30
     append_to_affix = "w" + str(window_size) + "e" + str(embed_size)
+    read_file_affix = hyperparameters[hyper]["read_file_affix"] + append_to_affix
     run_gensim_model(window_size, embed_size, iter_num)
+    create_learning_embedding(read_file_affix)
     for iter in parameters:
         read_file_affix =  parameters[iter]["read_file_affix"] + append_to_affix
         method =  parameters[iter]["method"]
