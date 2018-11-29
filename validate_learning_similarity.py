@@ -52,22 +52,16 @@ def read_learning_similarity_data(file_name, file_path):
         as a dictionary with the name of each target exercise
         as the key and the list of potential prerequisite exercises
         along with the problem type
-
-        # [TODO] redo so we store similar tokens by problem type
-        #    rather than storing by exercise
-        #    we can then find the accuracy rate on a learning token level
-        #    rather than on the exercise level
-
+        
+        example output: {'counting_in_scene|Type1': ['counting|Type2',
+           'counting_to_ten'|Type1']} 
     '''
-    # Notes for steps:
-    # read in each line for the learning similarity data
     path = os.path.expanduser(file_path+file_name+'.tsv')
     reader = open(path,'r')
     learning_similarity_exercises = {}
     for line in reader:
         splitline = line.strip().split("\t")
-        # split the text by "|" to eliminate problem type, keeping only
-        # name of exercise
+        # name of exercise|problem_type (depending on comparison made)
         exercise_key = splitline[0]
         # evaluate the set of matches as an array
         similar_exercise = ast.literal_eval(splitline[1])
@@ -130,7 +124,6 @@ def check_model_accuracy(prerequisites, model_matches):
         Create a precision and recall metric
         For each model match token (by problem type)
 
-        [TODO]
         Precision: did we identify the right prerequisite in the options?
         Token Recall: what % of the right prerequisites were predicted?
             (on a token level)
@@ -237,6 +230,9 @@ def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
     recall = calculate_accuracy_rate(model_accuracy_output, 'recall')
     avg_match_level = calculate_accuracy_rate(model_accuracy_output, 'match_level')
     exercise_recall = calculate_exercise_prereq_recall(model_accuracy_output)
+    write_prerequisite_match_file(analysis_path,
+               file_name ='remediation_match_tf',
+               model_accuracy_output = model_accuracy_output)
     write_accuracy_output_file(analysis_path,
                 file_name = '_accuracy_' + affix,
                 precision = precision,
@@ -305,6 +301,25 @@ def write_accuracy_output_file(analysis_path, file_name, precision, recall,
                 'avg level of matched prereq'])
         csvwriter.writerow([precision, recall, exercise_recall, match_level])
 
+def write_prerequisite_match_file(analysis_path, file_name, model_accuracy_output):
+    '''
+       write the remediation match file, adding binomial indcator whether of any 
+       of the predicted prerequisites match actual
+
+       example: 
+          counting-in-scenes|Type1  ['counting_to_ten|Type2','countingType1']   True
+          fractions|Type0   ['finding-derivatives|Type0','integrals|Type1'] False
+    '''
+    remediation_match_tf = []
+    for exercise in model_accuracy_output:
+        for item in model_accuracy_output[exercise]:
+            if item!='is_any_match':
+                predicted_prereqs = model_accuracy_output[exercise][item]['predicted_prereqs']
+                match =  model_accuracy_output[exercise][item]['precision']>0
+                 remediation_match_tf.append((item, predicted_prereqs, match))
+    write_similarity_token_file(path = analysis_path, 
+            file_name = file_name,
+            similarity_tokens = remediation_match_tf)    
 
 
 def output_random_sample(model_accuracy_output, max_sample, is_true_match):
@@ -369,12 +384,16 @@ def test_check_model_accuracy():
     print('PASSES TEST!!')
 
 
+def create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_number):
+    path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + 'r' +str(remediation_sample_number)
+    return path_affix
 
-def main(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
+    
+def validate_learning_similarity(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
     '''
         create the nearest comparison
     '''
-    path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + str(remediation_sample_number)
+    path_affix = create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_numbe)
     root_path = os.path.split(os.getcwd())[0] + '/'
     analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
     code_path = root_path + 'cahl_remediation_research' + '/'
@@ -383,7 +402,7 @@ def main(read_file_affix, method, find_nearest_comparison, remediation_sample_nu
     ####################################
     prerequisites = read_prerequisite_data('multilevel_prerequisites')
     remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
-    model_accuracy_output = check_model_accuracy(prerequisites, remediation_match)
+    model_accuracy_output = check_model_accuracy(prerequisites, model_matches = remediation_match)
     print_and_output_sample(analysis_path = analysis_path,
                             model_accuracy_output = model_accuracy_output)
 
@@ -404,7 +423,7 @@ if __name__ == "__main__":
     method = 'cosine'
     find_nearest_comparison = 'response' # response, learn (True-False)
     remediation_sample_number = 10
-    main(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
+    validate_learning_similarity(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
 
 
 

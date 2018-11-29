@@ -70,24 +70,6 @@ class CreateSimilarityToken:
                 self.missing_learning_tokens.append(token)
 
 
-    # def find_similar_tokens(self, method, target_vectors, target_tokens,
-    #             comparison_vectors, comparison_tokens, sample_number=1):
-    #     '''
-    #         Input: The learning tokens, learning tokens, response embedding and response tokens
-    #         Output: A list of response response token that most closely approximates each learning state
-    #             (true vector - false vector)
-    #     '''
-    #     similarity_tokens = self.generate_similarity_tokens(
-    #                             method = method,
-    #                             target_vectors = target_vectors,
-    #                             target_tokens = target_tokens,
-    #                             comparison_vectors = comparison_vectors,
-    #                             comparison_tokens = comparison_tokens,
-    #                             sample_number = sample_number)
-    #     print("*similar tokens matched*")
-    #     return similarity_tokens
-
-
 
     def generate_similarity_tokens(self, method, target_vectors, target_tokens,
             comparison_vectors, comparison_tokens, sample_number):
@@ -163,9 +145,9 @@ def test_create_similarity_token():
 
 
 
-def write_output( similarity,  root_path, path_suffix, **kwargs):
+def write_output( similarity,  root_path, path_affix, **kwargs):
     # write the output
-    analysis_path = root_path + 'cahl_analysis' + '/' + path_suffix + '/'
+    analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
     # create directory if not already exist
     if not os.path.exists(analysis_path):
         os.makedirs(analysis_path)
@@ -173,32 +155,27 @@ def write_output( similarity,  root_path, path_suffix, **kwargs):
     write_token_file(path = analysis_path, 
            file_name = 'learning_state_tokens',
            tokens = similarity.learning_state_tokens)
-    # write_vector_file(path = analysis_path,
-    #         file_name = 'response_false_vectors',
-    #         vectors = similarity.false_vectors)
-    # write_vector_file(path = analysis_path,
-    #         file_name = 'response_true_vectors',
-    #         vectors = similarity.true_vectors)
-    # write_vector_file(path = analysis_path,
-    #         file_name = 'learning_state_vectors',
-    #          vectors = similarity.learning_vectors)
-    for key, value in kwargs.items():
+   for key, value in kwargs.items():
         write_similarity_token_file(path = analysis_path,
            file_name = key,
            similarity_tokens = value)
 
+def create_path_affix(method, find_nearest_comparison, read_file_affix, remediation_sample_number):
+    path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + 'r' + str(remediation_sample_number)
+    return path_affix
 
 #########################################
 # [TODO] create the average exercise embedding
 # [TODO] run and create same output for exercise embedding
 
-def main(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
+def create_similar_token(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
     root_path = os.path.split(os.getcwd())[0] + '/'
     print('root path: '+ root_path)
     print('read file: '+ read_file_affix)
     print('method: '+ method)
     print('sample_number: ' +str(remediation_sample_number))
     print('nearest comparison: ' + find_nearest_comparison)
+    # [TODO] incorporate window and embedding into read_file_affix 
     response_vectors = read_embedding_vectors(root_path +
                             'cahl_output/embed_vectors_' + read_file_affix)
     response_tokens = read_tokens(root_path +
@@ -234,10 +211,11 @@ def main(read_file_affix, method, find_nearest_comparison, remediation_sample_nu
                     comparison_vectors = similarity_instance.response_vectors,
                     comparison_tokens = similarity_instance.response_tokens)
     print('***CREATE RESPONSE TOKEN**')
-    path_suffix = method + '_' + find_nearest_comparison + '_' + read_file_affix + str(remediation_sample_number)
+    path_affix = create_path_affix(method, find_nearest_comparison, read_file_affix, remediation_sample_number)
+  
     write_output(similarity = similarity_instance,
             root_path = root_path,
-            path_suffix = path_suffix,
+            path_affix = path_affix,
             remediation_match_tokens = remediation_match_tokens,
             response_similar_tokens = response_similar_tokens)
 
@@ -248,6 +226,6 @@ if __name__ == "__main__":
     method = 'cosine'
     find_nearest_comparison = 'response' # response, learn (True-False)
     remediation_sample_number = 10
-    main(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
+    create_similar_token(read_file_affix, method, find_nearest_comparison, remediation_sample_number)
 
 

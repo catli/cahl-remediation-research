@@ -48,17 +48,7 @@ def write_token_file(file_name, data_array):
     with open_file:
         [open_file.write(data + '\n') for data in data_array]
         
-# def write_token_file(file_name, data_array):
-#     '''write file. Estimated time: 1.5 sec for 1M rows'''
-#     # [TODO]: can we reduce runtime if we don't use csvwriter and just write file with open? 
-#     path = os.path.expanduser('~/output/'+file_name+'.csv')
-#     print(path)
-#     open_file = open(path, "w")
-#     with open_file:
-#         csvwriter = csv.writer(open_file)
-#         for row in data_array:
-#             csvwriter.writerows(row)
-        
+      
 def write_vector_file(file_name, data_array):
     '''write the embedding vectors. Estimated time: 1.5 sec for 1M rows'''
     path = os.path.expanduser('~/cahl_output/'+file_name+'.out')
@@ -66,37 +56,42 @@ def write_vector_file(file_name, data_array):
     np.savetxt(path, data_array, delimiter = ',')
 
 
-start = time.time() 
-read_filename = os.path.expanduser('~/sorted_data/tokenize_data_sorted.csv')
-skills = read_data(read_filename)
-
-#############################################
-## Model the skills data and create the embedding representation 
-# Input: the sorted skill tokens for each learning session
-# Output: embedding vector for each token and the index with the name of token in same order
-## Time: For 1M rows of data, this takes 
-window_size = 10 
-embed_size = 30
-iter_num = 30
-
-model = Word2Vec(skills, size = embed_size, window = window_size, iter =iter_num)
-vectors = model.wv.vectors
-vector_index = model.wv.index2word
-print(vector_index)
-
-# store the vectors and the vector index locally
-write_affix = 'w' + str(window_size) + 'e' + str(embed_size)
-write_vector_file('embed_vectors_full' + write_affix, vectors)
-write_token_file('embed_index_full' + write_affix, vector_index)
-
-end = time.time()
-print(end-start)
-
-# small dataset using gensim approach to 
-# using the manual read dataset: 35 sec 
-# using gensim approach: 50 sec 
 
 
+def run_gensim_model(window_size, embed_size, iter_num): 
+    start = time.time() 
+    read_filename = os.path.expanduser('~/sorted_data/tokenize_data_sorted.csv')
+    skills = read_data(read_filename)
+
+    #############################################
+    ## Model the skills data and create the embedding representation 
+    # Input: the sorted skill tokens for each learning session
+    # Output: embedding vector for each token and the index with the name of token in same order
+    ## Time: For 1M rows of data, this takes 
+    
+    model = Word2Vec(skills, size = embed_size, window = window_size, iter =iter_num)
+    vectors = model.wv.vectors
+    vector_index = model.wv.index2word
+    print(vector_index)
+    
+    # store the vectors and the vector index locally
+    write_affix = 'w' + str(window_size) + 'e' + str(embed_size)
+    write_vector_file('embed_vectors_full' + write_affix, vectors)
+    write_token_file('embed_index_full' + write_affix, vector_index)
+    
+    end = time.time()
+    print(end-start)
+    
+    # small dataset using gensim approach to 
+    # using the manual read dataset: 35 sec 
+    # using gensim approach: 50 sec 
+    
+
+if __name__ == "__main__":
+    window_size = 10 
+    embed_size = 30
+    iter_num = 30
+    run_gensim_model(window_size, embed_size, iter_num)    
 
 
 
