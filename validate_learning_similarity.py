@@ -4,6 +4,7 @@ import json
 import numpy as np
 import os
 import pdb
+from util_functions import write_similarity_token_file
 
 '''
 Script to validate the output against the manually entered prerequisites
@@ -222,7 +223,7 @@ def return_recall_match(true_prereqs, predicted_exercises):
 
 
 
-def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
+def print_and_output_sample(analysis_path, model_accuracy_output, setting_name, affix = '' ):
     '''
         print sample and output
     '''
@@ -230,21 +231,31 @@ def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
     recall = calculate_accuracy_rate(model_accuracy_output, 'recall')
     avg_match_level = calculate_accuracy_rate(model_accuracy_output, 'match_level')
     exercise_recall = calculate_exercise_prereq_recall(model_accuracy_output)
-    write_prerequisite_match_file(analysis_path,
+    write_prerequisite_match_file(analysis_path + setting_name + '/',
                file_name ='remediation_match_tf',
                model_accuracy_output = model_accuracy_output)
-    write_accuracy_output_file(analysis_path,
+    write_accuracy_output_file(analysis_path + setting_name + '/',
                 file_name = '_accuracy_' + affix,
                 precision = precision,
                 recall = recall,
                 exercise_recall = exercise_recall,
                 match_level = avg_match_level)
+
+    append_overall_accuracy_file(analysis_path, 
+                file_name = 'overall_accuracy_' + affix ,
+                setting_name =  setting_name,
+                precision = precision,
+                recall = recall,
+                exercise_recall = exercise_recall,
+                match_level = avg_match_level)
+            
     # Printout a sample of True and False exercises
     true_sample = output_random_sample(
                         model_accuracy_output = model_accuracy_output,
                         max_sample = 10,
                         is_true_match = True)
-    write_sample_output_file( analysis_path,
+    
+    write_sample_output_file( analysis_path + setting_name + '/',
                 file_name = '_true_sample_'+ affix,
                 output = true_sample)
 
@@ -252,7 +263,8 @@ def print_and_output_sample(analysis_path, model_accuracy_output, affix = '' ):
                         model_accuracy_output = model_accuracy_output,
                         max_sample = 10,
                         is_true_match = False)
-    write_sample_output_file(analysis_path,
+    
+    write_sample_output_file( analysis_path + setting_name + '/',
                 file_name =  '_false_sample_'+ affix,
                 output = false_sample)
 
@@ -300,6 +312,19 @@ def write_accuracy_output_file(analysis_path, file_name, precision, recall,
                 'recall by response', 'recall by exercise',
                 'avg level of matched prereq'])
         csvwriter.writerow([precision, recall, exercise_recall, match_level])
+
+def append_overall_accuracy_file(overall_analysis_path, file_name, setting_name, precision, recall, exercise_recall, match_level ):
+    path = os.path.expanduser(overall_analysis_path + file_name+'.csv')
+    print(path)
+    open_file = open(path, "a+")
+    with open_file:
+        csvwriter = csv.writer(open_file, delimiter = ',')
+        csvwriter.writerow(['parameters','precision by response',
+                'recall by response', 'recall by exercise',
+                'avg level of matched prereq'])
+        csvwriter.writerow([setting_name, precision, recall, exercise_recall, match_level])
+
+
 
 def write_prerequisite_match_file(analysis_path, file_name, model_accuracy_output):
     '''
@@ -384,28 +409,28 @@ def test_check_model_accuracy():
     print('PASSES TEST!!')
 
 
-def create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_number):
-    path_affix = method + '_' + find_nearest_comparison + '_' + read_file_affix + 'r' +str(remediation_sample_number)
-    return path_affix
+def create_setting_name( method, find_nearest_comparison, read_file_affix, remediation_sample_number):
+    setting_name = method + '_' + find_nearest_comparison + '_' + read_file_affix + 'r' +str(remediation_sample_number)
+    return setting_name
 
     
 def validate_learning_similarity(read_file_affix, method, find_nearest_comparison, remediation_sample_number):
     '''
         create the nearest comparison
     '''
-    path_affix = create_path_affix( method, find_nearest_comparison, read_file_affix, remediation_sample_number)
+    setting_name= create_setting_name( method, find_nearest_comparison, read_file_affix, remediation_sample_number)
     root_path = os.path.split(os.getcwd())[0] + '/'
-    analysis_path = root_path + 'cahl_analysis' + '/' + path_affix + '/'
+    analysis_path = root_path + 'cahl_analysis' + '/'
     code_path = root_path + 'cahl_remediation_research' + '/'
 
 
     ####################################
     prerequisites = read_prerequisite_data('multilevel_prerequisites')
-    remediation_match = read_learning_similarity_data('remediation_match_tokens',analysis_path)
+    remediation_match = read_learning_similarity_data('remediation_match_tokens', analysis_path + setting_name + '/' )
     model_accuracy_output = check_model_accuracy(prerequisites, model_matches = remediation_match)
     print_and_output_sample(analysis_path = analysis_path,
-                            model_accuracy_output = model_accuracy_output)
-
+                            model_accuracy_output = model_accuracy_output,
+                            setting_name = setting_name)
     subject_exercises = find_exercise_for_specific_subject(
                             subject = 'pre-algebra',
                             topic_file_name = 'math_topic_tree',
@@ -415,6 +440,7 @@ def validate_learning_similarity(read_file_affix, method, find_nearest_compariso
                                                             model_matches = remediation_match)
     print_and_output_sample(analysis_path = analysis_path,
                             model_accuracy_output = subject_model_accuracy_output,
+                            setting_name = setting_name,
                             affix = 'prealgebra')
 
 
