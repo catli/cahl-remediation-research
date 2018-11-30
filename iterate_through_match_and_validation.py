@@ -1,7 +1,8 @@
 import getopt, sys
 import pdb
 from create_similar_token_sets import create_similar_token
-from validate_learning_similarity import main as validate_learning_similarity
+from create_learning_state_embeddings import create_learning_embedding 
+from validate_learning_similarity import validate_learning_similarity
 from run_gensim_model import run_gensim_model
 
 fullCmdArguments = sys.argv
@@ -92,6 +93,8 @@ for hyper in hyperparameters:
     iter_num = 30
     append_to_affix = "w" + str(window_size) + "e" + str(embed_size)
     read_file_affix = hyperparameters[hyper]["read_file_affix"] + append_to_affix
+    print('iterate on:')
+    print(read_file_affix) 
     run_gensim_model(window_size, embed_size, iter_num)
     create_learning_embedding(read_file_affix)
     for iter in parameters:
