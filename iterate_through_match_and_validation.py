@@ -46,7 +46,7 @@ def pass_in_arguments():
 
 hyperparameters = { 
      "hyperparameter1":{"window":5, "embedding":30, "read_file_affix":'full'},
-     "hyperparameter2":{"window":10, "embedding":30, "read_file_affix":'full'},
+     #"hyperparameter2":{"window":10, "embedding":30, "read_file_affix":'full'},
      "hyperparameter3":{"window":15, "embedding":30, "read_file_affix":'full'},
      "hyperparameter4":{"window":20, "embedding":30, "read_file_affix":'full'},
      "hyperparameter5":{"window":10, "embedding":15, "read_file_affix":'full'},
@@ -95,13 +95,12 @@ for hyper in hyperparameters:
     read_file_affix = hyperparameters[hyper]["read_file_affix"] + append_to_affix
     print('iterate on:')
     print(read_file_affix) 
-    run_gensim_model(window_size, embed_size, iter_num)
+    run_gensim_model(window_size, embed_size, iter_num) 
     create_learning_embedding(read_file_affix)
-    for iter in parameters:
-        read_file_affix =  parameters[iter]["read_file_affix"] + append_to_affix
-        method =  parameters[iter]["method"]
-        find_nearest_comparison =  parameters[iter]["find_nearest_comparison"]
-        remediation_sample_number =  parameters[iter]["remediation_sample_number"]
+    for iter in match_parameters:
+        method =  match_parameters[iter]["method"]
+        find_nearest_comparison =  match_parameters[iter]["find_nearest_comparison"]
+        remediation_sample_number =  match_parameters[iter]["remediation_sample_number"]
         # write similarity token to the following path:
         # cahl_analysis/<method>_<nearest_comparison>_<readfileaffix>_w<window_size>e<embed_size>r<remediation_sample>/remediation_match_tokens.tsv
         create_similar_token(

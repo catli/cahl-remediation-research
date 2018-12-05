@@ -25,51 +25,8 @@ class CreateSimilarityToken:
         # vectors_file_name, tokens_file_name):
         self.response_vectors = embedding_vectors
         self.response_tokens  = embedding_tokens
-        self.create_unique_problem_type_token()
-        self.create_learning_state_embedding()
-
-
-    def create_unique_problem_type_token(self):
-        # TODO: generalize for exercise level tokens
-        '''
-            Create a list of unique problem type tokens
-            Input:  a list of all exercise - problemtype - is response correct
-                token, i.e fractions|problemtype1|true or fractions|problemtype1|false
-            Output: an array of of unique exercise - problem type tokens,
-                i.e. the above would be combined into one token fractions|problemtype1
-        '''
-        undup_problem_type_tokens = []
-        for token_array in self.response_tokens:
-            new_token = "|".join(token_array.split('|')[0:-1])
-            undup_problem_type_tokens.append(new_token)
-        self.problem_type_tokens = list(set(undup_problem_type_tokens))
-
-    def create_learning_state_embedding(self):
-        '''
-            Input: problem type tokens
-            Output: embedding vectors representing learning state (true vector - false vector)
-            for each problem type
-        '''
-        self.learning_vectors = []
-        self.true_vectors = []
-        self.false_vectors = []
-        self.learning_state_tokens = []
-        self.missing_learning_tokens = []
-        for token in self.problem_type_tokens:
-            try:
-                true_token = token + '|' + 'true'
-                false_token = token + '|' + 'false'
-                # find true and false location
-                true_vector = self.response_vectors[ self.response_tokens.index(true_token)] 
-                false_vector = self.response_vectors[ self.response_tokens.index(false_token)]
-                self.true_vectors.append(true_vector)
-                self.false_vectors.append(false_vector)
-                self.learning_vectors.append(true_vector - false_vector)
-                self.learning_state_tokens.append(token)
-            except ValueError:
-                # if missing token
-                self.missing_learning_tokens.append(token)
-
+        self.learning_state_tokens = learning_state_tokens
+        self.learning_state_vectors = learning_state_vectors
 
     def generate_similarity_match(self, find_nearest_comparison, method,
             sample_number):
@@ -78,7 +35,7 @@ class CreateSimilarityToken:
             match_tokens = self.generate_similarity_tokens(
                 method = method,
                 sample_number = sample_number,
-                target_vectors = self.learning_vectors,
+                target_vectors = self.learning_state_vectors,
                 target_tokens = self.learning_state_tokens,
                 # change to compare against learning state tokens
                 comparison_vectors = self.response_vectors,
@@ -87,10 +44,10 @@ class CreateSimilarityToken:
             match_tokens = self.generate_similarity_tokens(
                 method = method,
                 sample_number = sample_number,
-                target_vectors = self.learning_vectors,
+                target_vectors = self.learning_state_vectors,
                 target_tokens = self.learning_state_tokens,
                 # change to compare against learning state tokens
-                comparison_vectors = self.learning_vectors,
+                comparison_vectors = self.learning_state_vectors,
                 comparison_tokens = self.learning_state_tokens)
         elif find_nearest_comparison == 'response-response':        
         # find match between learning staste and response tokens
@@ -152,7 +109,7 @@ def test_create_similarity_token():
                     comparison_tokens = test_similarity.response_tokens)
     test_learning_tokens = test_similarity.find_similar_tokens(method = "cosine",
                     sample_number = 1,
-                    target_vectors = test_similarity.learning_vectors,
+                    target_vectors = test_similarity.learning_state_vectors,
                     target_tokens = test_similarity.learning_state_tokens,
                     comparison_vectors =test_similarity.response_vectors,
                     comparison_tokens = test_similarity.response_tokens)
