@@ -2,6 +2,7 @@ import time
 import csv
 import os
 import pdb
+import json
 
 '''
 Script to iterate through the script
@@ -14,7 +15,7 @@ class SummarizeStuckness():
         self.reader = open(read_filename,'r')
         self.writefile = open(write_filename, 'w')
        
-    def iterate_through_lines(self):
+    def iterate_through_lines(self, prerequisites):
         '''
             read file and write the lines
             does not use readlines so there's less strain on memory
@@ -31,7 +32,7 @@ class SummarizeStuckness():
         first_line = self.reader.readline()
         counter = 1
         for line in self.reader:
-            self.parse_line(line)
+            self.parse_line(line, prerequisites)
             counter+=1
             if counter % 1000000 == 0:
                 print(counter)
@@ -44,9 +45,11 @@ class SummarizeStuckness():
             'unstuck_problems',
             'unstuck_same_exercise',
             'unstuck_remediation_problems',
-            'unstuck_correct_remdiation_problems'])
+            'unstuck_correct_remdiation_problems',
+            'unstuck_prereq_avail_problems',
+            'unstuck_is_prereq_match_problems'])
     
-    def parse_line(self, line):
+    def parse_line(self, line, prerequisites):
         '''
            Parse through each line and store the values 
         '''
@@ -65,7 +68,7 @@ class SummarizeStuckness():
             self.update_attempts(correct, attempt_numbers, problem) 
         else:
             self.update_attempts(correct, attempt_numbers, problem)  
-            self.add_new_data_for_user( problem_type, exercise, correct)
+            self.add_new_data_for_user( problem_type, exercise, correct, prerequisites)
             self.last_problem = problem
 
     def update_attempts(self, correct, attempt_numbers, problem):
@@ -90,15 +93,17 @@ class SummarizeStuckness():
         unstuck_problems = len(self.user_data['unstuck'].keys())
         unstuck_same_exercise = 0
         # [TODO: add] unstuck_diff_exercise_same_unit = 0
-        # [TODO] unstuck_has_prereq_problems = 0
-        # [TODO] unstuck_prereq_avail_problems = 0
         unstuck_remediation_problems = 0 
         unstuck_correct_remdiation_problems = 0
+        unstuck_prereq_avail_problems = 0
+        unstuck_is_prereq_match_problems = 0  
         for unstuck_item in self.user_data['unstuck']:
             unstuck_array = self.user_data['unstuck'][unstuck_item] 
             unstuck_same_exercise += unstuck_array['same_exercise_remediation_problems']
             unstuck_remediation_problems += unstuck_array['remediation_problems']
             unstuck_correct_remdiation_problems += unstuck_array['correct_remediation_problems']
+            unstuck_prereq_avail_problems += unstuck_array['is_prereqs_available']  
+            unstuck_is_prereq_match_problems += unstuck_array['is_prereqs_match'] 
         self.csvwriter.writerow([ self.last_sha_id, 
             never_unstuck_problems + never_stuck_problems +  unstuck_problems,
             never_stuck_problems, 
@@ -106,14 +111,16 @@ class SummarizeStuckness():
             unstuck_problems,
             unstuck_same_exercise,
             unstuck_remediation_problems,
-            unstuck_correct_remdiation_problems])
+            unstuck_correct_remdiation_problems,
+            unstuck_prereq_avail_problems,
+            unstuck_is_prereq_match_problems ])
         # clear user data 
         self.user_data = {'stuck':{},'unstuck':{}, 'never_stuck':[], 'stuck_correct':{}  }
 
-    def add_new_data_for_user(self, problem_type, exercise, correct):
+    def add_new_data_for_user(self, problem_type, exercise, correct, prerequisites):
         problem = exercise + '|' + problem_type 
         if self.user_attempts[problem]['correct']>=2 and problem in self.user_data['stuck']:
-            self.user_data['unstuck'][problem]  = self.summarize_unstuck(problem)
+            self.user_data['unstuck'][problem]  = self.summarize_unstuck(problem, prerequisites)
             del self.user_data['stuck'][problem]
             del self.user_data['stuck_correct'][problem]
         self.add_to_stuck(problem, correct)
@@ -135,7 +142,7 @@ class SummarizeStuckness():
             self.user_data['stuck'][stuck_item].append(problem)
             self.user_data['stuck_correct'][stuck_item].append(correct)
     
-    def summarize_unstuck(self, problem):
+    def summarize_unstuck(self, problem, prerequisites):
         '''
             output: output the unstuck summary stats array
             which lists the attibutes of the unstuckness token
@@ -145,23 +152,102 @@ class SummarizeStuckness():
         exercise = problem.split('|')[0]
         correct_list = self.user_data['stuck_correct'][problem]
         remediation_list = self.user_data['stuck'][problem]
-        same_exercise_list = [item.split('|')[0] == exercise for item in remediation_list]
+        remediation_exercise_list = [item.split('|')[0] for item in remediation_list]
         # [TODO] if the current problem is equal to the stuck problem name
         # then add to stuck metric
         unstuck_state = {} 
-        unstuck_state['same_exercise_remediation_problems'] = sum(same_exercise_list) 
+        unstuck_state['same_exercise_remediation_problems'] = sum(
+                [item == exercise for item in remediation_exercise_list]) 
         unstuck_state['remediation_problems'] = len(remediation_list) 
         unstuck_state['correct_remediation_problems'] = sum(correct_list)
+        # check against prereqs
+        prereq_avail, is_recall_match = self.check_against_prereqs(
+                exercise, prerequisites, remediation_exercise_list)
+        unstuck_state['is_prereqs_available'] = int(prereq_avail) 
+        unstuck_state['is_prereqs_match'] = int(is_recall_match)
         return unstuck_state
+
+    def check_against_prereqs(self, exercise, prerequisites, remediation_exercise_list): 
+        '''
+            Check if prerequisites available for an exercise
+            If available check if there matches
+        '''
+        if exercise in prerequisites:
+            prereq_avail = True
+            true_prereqs = prerequisites[exercise]
+            is_recall_match = self.return_prereq_match(
+                    true_prereqs, remediation_exercise_list)
+        else: 
+            prereq_avail = False
+            is_recall_match = False
+            #match_levels = 0
+        return prereq_avail, is_recall_match #, match_levels
+
+    def return_prereq_match(self, true_prereqs, remediation_exercise_list):
+        '''
+            Find the prerequisites of the target exercise being worked on 
+            and see if any items in the remediation list is a prerequisite
+        '''
+        is_recall_match = []
+        for i,level in enumerate(true_prereqs):
+            # Iterate through true prerequisites and for each
+            for true_prereq in level:
+                #print('MATCHING')
+                #print(true_prereq)
+                #print(remediation_exercise_list)
+                is_true_prereq_match = true_prereq in remediation_exercise_list
+                #print(is_true_prereq_match)
+                is_recall_match.append(is_true_prereq_match)
+        return max(is_recall_match)
+
+
+
+def read_prerequisite_data(file_name, is_json_file=True):
+    '''
+        read in the prerequisite data
+        as a dictionary with the name of each target exercise
+        as the key and the list of prerequisite exercises as an array
+        example: {'multiplication':['addition','counting']}
+    '''
+    if is_json_file:
+        extension = '.json'
+    else:
+        extension = 'csv'
+
+    path = os.path.expanduser(file_name+extension)
+    reader = open(path,'r')
+
+    if is_json_file:
+        prerequisites = json.load(reader)
+    else:
+        prerequisites = load_prereq_csv_to_dictionary(reader)
+    return prerequisites
+
+
+def load_prereq_csv_to_dictionary(reader):
+    prerequisites = {}
+    for line in reader:
+        # split line by comma delimitation
+        splitline = line.strip().split(",")
+        try:
+            prerequisites[splitline[0]].append(splitline[1])
+        except KeyError:
+            # if key in dictionary not already created
+            prerequisites[splitline[0]] = [ splitline[1]]
+    return prerequisites
+
+
 
 
 
 def main():
     read_file = os.path.expanduser('~/sorted_data/khan_data_sorted.csv')
     print(read_file)
-    write_file = os.path.expanduser('~/cahl_output/summarize_stuckness_bylearner_problemtype.csv')
+    write_file = os.path.expanduser(
+            '~/cahl_output/summarize_stuckness_bylearner_problemtype.csv')
     stick = SummarizeStuckness(read_file, write_file)
-    stick.iterate_through_lines()
+    prerequisites = read_prerequisite_data('multilevel_prerequisites')
+    stick.iterate_through_lines(prerequisites)
 
 if __name__ == '__main__':
     start = time.time() 
