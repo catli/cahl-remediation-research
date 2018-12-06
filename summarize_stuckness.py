@@ -15,7 +15,7 @@ class SummarizeStuckness():
         self.reader = open(read_filename,'r')
         self.writefile = open(write_filename, 'w')
        
-    def iterate_through_lines(self, prerequisites):
+    def iterate_through_lines(self, prerequisites, units, lessons):
         '''
             read file and write the lines
             does not use readlines so there's less strain on memory
@@ -32,7 +32,8 @@ class SummarizeStuckness():
         first_line = self.reader.readline()
         counter = 1
         for line in self.reader:
-            self.parse_line(line, prerequisites)
+            # [TODO] add units or lessons  
+            self.parse_line(line, prerequisites, units, lessons)
             counter+=1
             if counter % 1000000 == 0:
                 print(counter)
@@ -47,9 +48,18 @@ class SummarizeStuckness():
             'unstuck_remediation_problems',
             'unstuck_correct_remdiation_problems',
             'unstuck_prereq_avail_problems',
-            'unstuck_is_prereq_match_problems'])
+            'unstuck_is_prereq_match_problems',
+            'unstuck_prereq_avail_remediation_items',
+            'unstuck_prereq_match_remediation_items',  
+            'unstuck_is_topic_tree_avail_problems',  
+            'unstuck_is_unit_match_problems',  
+            'unstuck_is_lesson_match_problems',  
+            'unstuck_topic_tree_avail_remediation_items',
+            'unstuck_unit_match_remediation_items',  
+            'unstuck_lesson_match_remediation_items' 
+            ])
     
-    def parse_line(self, line, prerequisites):
+    def parse_line(self, line, prerequisites, units, lessons):
         '''
            Parse through each line and store the values 
         '''
@@ -68,7 +78,9 @@ class SummarizeStuckness():
             self.update_attempts(correct, attempt_numbers, problem) 
         else:
             self.update_attempts(correct, attempt_numbers, problem)  
-            self.add_new_data_for_user( problem_type, exercise, correct, prerequisites)
+            # [TODO] add units and lessons 
+            self.add_new_data_for_user( 
+                    problem_type, exercise, correct, prerequisites, units, lessons)
             self.last_problem = problem
 
     def update_attempts(self, correct, attempt_numbers, problem):
@@ -97,13 +109,30 @@ class SummarizeStuckness():
         unstuck_correct_remdiation_problems = 0
         unstuck_prereq_avail_problems = 0
         unstuck_is_prereq_match_problems = 0  
+        unstuck_prereq_avail_remediation_items = 0
+        unstuck_prereq_match_remediation_items = 0  
+        unstuck_is_topic_tree_avail_problems = 0  
+        unstuck_is_unit_match_problems  = 0  
+        unstuck_is_lesson_match_problems  = 0  
+        unstuck_topic_tree_avail_remediation_items = 0  
+        unstuck_unit_match_remediation_items = 0  
+        unstuck_lesson_match_remediation_items = 0  
         for unstuck_item in self.user_data['unstuck']:
             unstuck_array = self.user_data['unstuck'][unstuck_item] 
             unstuck_same_exercise += unstuck_array['same_exercise_remediation_problems']
             unstuck_remediation_problems += unstuck_array['remediation_problems']
             unstuck_correct_remdiation_problems += unstuck_array['correct_remediation_problems']
             unstuck_prereq_avail_problems += unstuck_array['is_prereqs_available']  
-            unstuck_is_prereq_match_problems += unstuck_array['is_prereqs_match'] 
+            unstuck_is_prereq_match_problems += unstuck_array['is_prereqs_match']
+            unstuck_prereq_avail_remediation_items += unstuck_array['prereqs_available_items']
+            unstuck_prereq_match_remediation_items += unstuck_array['prereqs_match_items']  
+            unstuck_is_topic_tree_avail_problems += unstuck_array['is_topic_tree_avail']  
+            unstuck_is_unit_match_problems  += unstuck_array['is_unit_match']  
+            unstuck_is_lesson_match_problems  += unstuck_array['is_lesson_match']  
+            unstuck_topic_tree_avail_remediation_items += unstuck_array[
+                    'topic_tree_avail_items']  
+            unstuck_unit_match_remediation_items += unstuck_array['unit_match_items']  
+            unstuck_lesson_match_remediation_items += unstuck_array['lesson_match_items']
         self.csvwriter.writerow([ self.last_sha_id, 
             never_unstuck_problems + never_stuck_problems +  unstuck_problems,
             never_stuck_problems, 
@@ -113,14 +142,26 @@ class SummarizeStuckness():
             unstuck_remediation_problems,
             unstuck_correct_remdiation_problems,
             unstuck_prereq_avail_problems,
-            unstuck_is_prereq_match_problems ])
+            unstuck_is_prereq_match_problems,
+            unstuck_prereq_avail_remediation_items,
+            unstuck_prereq_match_remediation_items,  
+            unstuck_is_topic_tree_avail_problems,  
+            unstuck_is_unit_match_problems ,  
+            unstuck_is_lesson_match_problems ,  
+            unstuck_topic_tree_avail_remediation_items,
+            unstuck_unit_match_remediation_items,  
+            unstuck_lesson_match_remediation_items 
+            ])
         # clear user data 
         self.user_data = {'stuck':{},'unstuck':{}, 'never_stuck':[], 'stuck_correct':{}  }
 
-    def add_new_data_for_user(self, problem_type, exercise, correct, prerequisites):
+    def add_new_data_for_user(self, 
+            problem_type, exercise, correct, prerequisites, units, lessons):
         problem = exercise + '|' + problem_type 
         if self.user_attempts[problem]['correct']>=2 and problem in self.user_data['stuck']:
-            self.user_data['unstuck'][problem]  = self.summarize_unstuck(problem, prerequisites)
+            # [TODO] add units and lessons
+            self.user_data['unstuck'][problem]  = self.summarize_unstuck(
+                    problem, prerequisites, units, lessons)
             del self.user_data['stuck'][problem]
             del self.user_data['stuck_correct'][problem]
         self.add_to_stuck(problem, correct)
@@ -142,7 +183,7 @@ class SummarizeStuckness():
             self.user_data['stuck'][stuck_item].append(problem)
             self.user_data['stuck_correct'][stuck_item].append(correct)
     
-    def summarize_unstuck(self, problem, prerequisites):
+    def summarize_unstuck(self, problem, prerequisites, units, lessons):
         '''
             output: output the unstuck summary stats array
             which lists the attibutes of the unstuckness token
@@ -153,18 +194,27 @@ class SummarizeStuckness():
         correct_list = self.user_data['stuck_correct'][problem]
         remediation_list = self.user_data['stuck'][problem]
         remediation_exercise_list = [item.split('|')[0] for item in remediation_list]
-        # [TODO] if the current problem is equal to the stuck problem name
-        # then add to stuck metric
         unstuck_state = {} 
         unstuck_state['same_exercise_remediation_problems'] = sum(
                 [item == exercise for item in remediation_exercise_list]) 
         unstuck_state['remediation_problems'] = len(remediation_list) 
         unstuck_state['correct_remediation_problems'] = sum(correct_list)
         # check against prereqs
-        prereq_avail, is_recall_match = self.check_against_prereqs(
+        prereq_avail, is_recall_matches = self.check_against_prereqs(
                 exercise, prerequisites, remediation_exercise_list)
         unstuck_state['is_prereqs_available'] = int(prereq_avail) 
-        unstuck_state['is_prereqs_match'] = int(is_recall_match)
+        unstuck_state['is_prereqs_match'] = int(max(is_recall_matches))
+        unstuck_state['prereqs_available_items'] = len(is_recall_matches)*int(prereq_avail)
+        unstuck_state['prereqs_match_items'] = sum(is_recall_matches)
+        # calculate whether remediation exercise match target exercise unit /lessons
+        is_topic_tree_avail, is_unit_matches, is_lesson_matches = self.check_topic_tree_match(
+                exercise, remediation_exercise_list, units, lessons)
+        unstuck_state['is_topic_tree_avail'] = int(is_topic_tree_avail) 
+        unstuck_state['is_unit_match'] = int(max(is_unit_matches))
+        unstuck_state['is_lesson_match'] = int(max(is_lesson_matches))
+        unstuck_state['topic_tree_avail_items'] = len(is_unit_matches)*int(is_topic_tree_avail) 
+        unstuck_state['unit_match_items'] = sum(is_unit_matches)
+        unstuck_state['lesson_match_items'] = sum(is_lesson_matches)
         return unstuck_state
 
     def check_against_prereqs(self, exercise, prerequisites, remediation_exercise_list): 
@@ -175,31 +225,54 @@ class SummarizeStuckness():
         if exercise in prerequisites:
             prereq_avail = True
             true_prereqs = prerequisites[exercise]
-            is_recall_match = self.return_prereq_match(
+            is_recall_matches = self.return_prereq_match(
                     true_prereqs, remediation_exercise_list)
         else: 
             prereq_avail = False
-            is_recall_match = False
+            is_recall_matches = [False]
             #match_levels = 0
-        return prereq_avail, is_recall_match #, match_levels
+        return prereq_avail, is_recall_matches #, match_levels
 
     def return_prereq_match(self, true_prereqs, remediation_exercise_list):
         '''
             Find the prerequisites of the target exercise being worked on 
             and see if any items in the remediation list is a prerequisite
         '''
-        is_recall_match = []
+        is_recall_matches = []
         for i,level in enumerate(true_prereqs):
             # Iterate through true prerequisites and for each
             for true_prereq in level:
-                #print('MATCHING')
-                #print(true_prereq)
-                #print(remediation_exercise_list)
                 is_true_prereq_match = true_prereq in remediation_exercise_list
-                #print(is_true_prereq_match)
-                is_recall_match.append(is_true_prereq_match)
-        return max(is_recall_match)
+                is_recall_matches.append(is_true_prereq_match)
+        return is_recall_matches
 
+    def check_topic_tree_match(self, exercise, remediation_exercise_list, units, lessons): 
+        '''
+            check if the if remediation exercises are in the same unit
+            or lessons as target exercise
+        '''
+        if exercise in units and remediation_exercise_list:
+            is_topic_tree_avail = True 
+            is_unit_matches = self.return_topic_tree_match(
+                    exercise, remediation_exercise_list, units)
+            is_lesson_matches = self.return_topic_tree_match(
+                    exercise, remediation_exercise_list, lessons)
+        else: 
+            is_topic_tree_avail = False
+            is_unit_matches = [False]
+            is_lesson_matches  = [False]
+        return is_topic_tree_avail, is_unit_matches, is_lesson_matches  
+
+    def return_topic_tree_match(self, 
+            exercise, remediation_exercise_list, match_dict):
+        target_match = set(match_dict[exercise])
+        is_topic_tree_matches = []
+        for item in remediation_exercise_list:
+            remediation_match = set(match_dict[item])
+            is_match = len(target_match.intersection(
+                        remediation_match))>0
+            is_topic_tree_matches.append(is_match)
+        return  is_topic_tree_matches
 
 
 def read_prerequisite_data(file_name, is_json_file=True):
@@ -236,6 +309,34 @@ def load_prereq_csv_to_dictionary(reader):
             prerequisites[splitline[0]] = [ splitline[1]]
     return prerequisites
 
+def read_topic_tree_data(file_name):
+    '''
+        read in the topic tree data
+        as a dictionary with the name of each target exercise
+        as the key and the list of units and tops an array
+        example: {'multiplication':['1st-grade-math-topic-1',
+        'ny-engage-math-topic']}
+    '''
+    path = os.path.expanduser(file_name+'.csv')
+    reader = open(path,'r')
+    units, lessons = load_topic_tree_to_dict(reader)
+    return units, lessons
+
+
+def load_topic_tree_to_dict(topic_tree_reader):
+    units = {}
+    lessons = {}
+    for line in topic_tree_reader:
+        # split line by comma delimitation
+        splitline = line.strip().split(",")
+        try:
+            units[splitline[0]].append(splitline[2])
+            lessons[splitline[0]].append(splitline[3])
+        except KeyError:
+            # if key in dictionary not already created
+            units[splitline[0]] = [ splitline[2]]
+            lessons[splitline[0]] = [ splitline[3]]
+    return units, lessons
 
 
 
@@ -247,7 +348,9 @@ def main():
             '~/cahl_output/summarize_stuckness_bylearner_problemtype.csv')
     stick = SummarizeStuckness(read_file, write_file)
     prerequisites = read_prerequisite_data('multilevel_prerequisites')
-    stick.iterate_through_lines(prerequisites)
+    units, lessons = read_topic_tree_data('math_topic_tree')
+    # [TODO] add units and lessons
+    stick.iterate_through_lines(prerequisites, units, lessons)
 
 if __name__ == '__main__':
     start = time.time() 

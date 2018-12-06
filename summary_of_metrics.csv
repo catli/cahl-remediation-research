@@ -1,0 +1,12 @@
+,metric,total learners,total problems
+0,01-total learners ,5850161,-
+1,02-tried a problems,5726004,128825485
+2,03-immediately mastered a problem ,5162593,82098342
+3,04-got stuck ever,5039549,46727143
+4,05-unable to unstuck,4528457,27750465
+5,06-able to unstuck,3238783,18976678
+6,07-unstuck exercise have prereq available,3142214,17990157
+7,08-prereq for unstuck exercise matches prereq,1110778,4194937
+8,09-unstuck remediation problems for unstuck exercise,3061402,1167394637
+9,10-unstuck remediation problems same exercise as stuck exercise,3030926,111117982
+10,11-unstuck remediation problems answered correctly,2951244,757602083
