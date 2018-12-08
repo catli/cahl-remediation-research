@@ -1,12 +1,19 @@
 ,metric,total learners,total problems
-0,01-total learners ,5850161,-
-1,02-tried a problems,5726004,128825485
-2,03-immediately mastered a problem ,5162593,82098342
-3,04-got stuck ever,5039549,46727143
-4,05-unable to unstuck,4528457,27750465
-5,06-able to unstuck,3238783,18976678
-6,07-unstuck exercise have prereq available,3142214,17990157
-7,08-prereq for unstuck exercise matches prereq,1110778,4194937
-8,09-unstuck remediation problems for unstuck exercise,3061402,1167394637
-9,10-unstuck remediation problems same exercise as stuck exercise,3030926,111117982
-10,11-unstuck remediation problems answered correctly,2951244,757602083
+0,01-total learners ,17775,-
+1,02-tried a problems,17389,389111
+2,03-immediately mastered a problem ,15649,247938
+3,04-got stuck ever,15298,141173
+4,05-unable to unstuck,13718,83143
+5,06-attempted to unstuck,12569,97359
+6,07-able to unstuck,9832,58030
+7,08-unstuck exercise have prereq available,9563,55007
+8,09-prereq for unstuck exercise matches prereq,3349,12944
+9,10-unstuck remediation problems for unstuck exercise,9292,4142462
+10,11-unstuck remediation problems different exercise as stuck exercise,4914,3793430
+11,12-unstuck remediation problems answered correctly,8938,2649029
+12,13-unstuck remediation exericse in topic tree,9292,54869
+13,14-unstuck remediation at least one not in same unit,2381,13567
+14,15-unstuck remediation exercise at least one not in same lesson,3760,19156
+15,16-unstuck remediation problems for exercises in topic tree,9292,4142462
+16,17-unstuck remediation problems in same unit,9286,1562478
+17,18-unstuck remediation problems in same lesson,9274,751241

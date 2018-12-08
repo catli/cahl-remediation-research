@@ -44,16 +44,19 @@ class SummarizeStuckness():
             'never_stuck_problems', 
             'never_unstuck_problems',
             'unstuck_problems',
-            'unstuck_same_exercise',
+            'reattempted_stuck_problems',
+            'unstuck_different_exercise',
             'unstuck_remediation_problems',
             'unstuck_correct_remdiation_problems',
             'unstuck_prereq_avail_problems',
             'unstuck_is_prereq_match_problems',
-            'unstuck_prereq_avail_remediation_items',
-            'unstuck_prereq_match_remediation_items',  
+            #'unstuck_prereq_avail_remediation_items',
+            #'unstuck_prereq_match_remediation_items',  
             'unstuck_is_topic_tree_avail_problems',  
-            'unstuck_is_unit_match_problems',  
-            'unstuck_is_lesson_match_problems',  
+            #'unstuck_is_unit_match_problems',  
+            #'unstuck_is_lesson_match_problems',  
+            'unstuck_is_not_unit_match_problems',  
+            'unstuck_is_not_lesson_match_problems',
             'unstuck_topic_tree_avail_remediation_items',
             'unstuck_unit_match_remediation_items',  
             'unstuck_lesson_match_remediation_items' 
@@ -78,7 +81,6 @@ class SummarizeStuckness():
             self.update_attempts(correct, attempt_numbers, problem) 
         else:
             self.update_attempts(correct, attempt_numbers, problem)  
-            # [TODO] add units and lessons 
             self.add_new_data_for_user( 
                     problem_type, exercise, correct, prerequisites, units, lessons)
             self.last_problem = problem
@@ -103,32 +105,36 @@ class SummarizeStuckness():
         never_stuck_problems = len(self.user_data['never_stuck'])
         never_unstuck_problems = len(self.user_data['stuck'].keys())
         unstuck_problems = len(self.user_data['unstuck'].keys())
-        unstuck_same_exercise = 0
-        # [TODO: add] unstuck_diff_exercise_same_unit = 0
+        reattempted_stuck_problems = unstuck_problems + self.count_reattempt_on_stuck()
+        unstuck_different_exercise = 0
         unstuck_remediation_problems = 0 
         unstuck_correct_remdiation_problems = 0
         unstuck_prereq_avail_problems = 0
         unstuck_is_prereq_match_problems = 0  
-        unstuck_prereq_avail_remediation_items = 0
-        unstuck_prereq_match_remediation_items = 0  
+        #unstuck_prereq_avail_remediation_items = 0
+        #unstuck_prereq_match_remediation_items = 0  
         unstuck_is_topic_tree_avail_problems = 0  
-        unstuck_is_unit_match_problems  = 0  
-        unstuck_is_lesson_match_problems  = 0  
+        #unstuck_is_unit_match_problems  = 0  
+        #unstuck_is_lesson_match_problems  = 0  
+        unstuck_is_not_unit_match_problems  = 0  
+        unstuck_is_not_lesson_match_problems  = 0  
         unstuck_topic_tree_avail_remediation_items = 0  
         unstuck_unit_match_remediation_items = 0  
         unstuck_lesson_match_remediation_items = 0  
         for unstuck_item in self.user_data['unstuck']:
             unstuck_array = self.user_data['unstuck'][unstuck_item] 
-            unstuck_same_exercise += unstuck_array['same_exercise_remediation_problems']
+            unstuck_different_exercise += unstuck_array['different_exercise_remediation_problems']
             unstuck_remediation_problems += unstuck_array['remediation_problems']
             unstuck_correct_remdiation_problems += unstuck_array['correct_remediation_problems']
             unstuck_prereq_avail_problems += unstuck_array['is_prereqs_available']  
             unstuck_is_prereq_match_problems += unstuck_array['is_prereqs_match']
-            unstuck_prereq_avail_remediation_items += unstuck_array['prereqs_available_items']
-            unstuck_prereq_match_remediation_items += unstuck_array['prereqs_match_items']  
+            #unstuck_prereq_avail_remediation_items += unstuck_array['prereqs_available_items']
+            #unstuck_prereq_match_remediation_items += unstuck_array['prereqs_match_items']  
             unstuck_is_topic_tree_avail_problems += unstuck_array['is_topic_tree_avail']  
-            unstuck_is_unit_match_problems  += unstuck_array['is_unit_match']  
-            unstuck_is_lesson_match_problems  += unstuck_array['is_lesson_match']  
+            #unstuck_is_unit_match_problems  += unstuck_array['is_unit_match']  
+            #unstuck_is_lesson_match_problems  += unstuck_array['is_lesson_match']  
+            unstuck_is_not_unit_match_problems += unstuck_array['is_not_unit_match']  
+            unstuck_is_not_lesson_match_problems += unstuck_array['is_not_lesson_match'] 
             unstuck_topic_tree_avail_remediation_items += unstuck_array[
                     'topic_tree_avail_items']  
             unstuck_unit_match_remediation_items += unstuck_array['unit_match_items']  
@@ -138,22 +144,36 @@ class SummarizeStuckness():
             never_stuck_problems, 
             never_unstuck_problems,
             unstuck_problems,
-            unstuck_same_exercise,
+            reattempted_stuck_problems,
+            unstuck_different_exercise,
             unstuck_remediation_problems,
             unstuck_correct_remdiation_problems,
             unstuck_prereq_avail_problems,
             unstuck_is_prereq_match_problems,
-            unstuck_prereq_avail_remediation_items,
-            unstuck_prereq_match_remediation_items,  
+            #unstuck_prereq_avail_remediation_items,
+            #unstuck_prereq_match_remediation_items,  
             unstuck_is_topic_tree_avail_problems,  
-            unstuck_is_unit_match_problems ,  
-            unstuck_is_lesson_match_problems ,  
+            #unstuck_is_unit_match_problems ,  
+            #unstuck_is_lesson_match_problems , 
+            unstuck_is_not_unit_match_problems ,  
+            unstuck_is_not_lesson_match_problems , 
             unstuck_topic_tree_avail_remediation_items,
             unstuck_unit_match_remediation_items,  
             unstuck_lesson_match_remediation_items 
             ])
         # clear user data 
         self.user_data = {'stuck':{},'unstuck':{}, 'never_stuck':[], 'stuck_correct':{}  }
+
+    def count_reattempt_on_stuck(self):
+        '''
+            iterate through all the stuck exercises and see if learner
+            reattempted any of these problems
+        '''
+        reattempted_stuck_problems = 0
+        for problem in self.user_data['stuck']:
+            if problem in self.user_data['stuck'][problem]:
+                reattempted_stuck_problems += 1 
+        return  reattempted_stuck_problems
 
     def add_new_data_for_user(self, 
             problem_type, exercise, correct, prerequisites, units, lessons):
@@ -187,16 +207,15 @@ class SummarizeStuckness():
         '''
             output: output the unstuck summary stats array
             which lists the attibutes of the unstuckness token
-            ['same_exercise','remediation_problems','correct_remediation_problems']
+            ['different_exercise','remediation_problems','correct_remediation_problems']
         '''
-        # [TODO] add the is same unit and is a prerequsitie count
         exercise = problem.split('|')[0]
         correct_list = self.user_data['stuck_correct'][problem]
         remediation_list = self.user_data['stuck'][problem]
         remediation_exercise_list = [item.split('|')[0] for item in remediation_list]
         unstuck_state = {} 
-        unstuck_state['same_exercise_remediation_problems'] = sum(
-                [item == exercise for item in remediation_exercise_list]) 
+        unstuck_state['different_exercise_remediation_problems'] = sum(
+                [item != exercise for item in remediation_exercise_list]) 
         unstuck_state['remediation_problems'] = len(remediation_list) 
         unstuck_state['correct_remediation_problems'] = sum(correct_list)
         # check against prereqs
@@ -212,6 +231,8 @@ class SummarizeStuckness():
         unstuck_state['is_topic_tree_avail'] = int(is_topic_tree_avail) 
         unstuck_state['is_unit_match'] = int(max(is_unit_matches))
         unstuck_state['is_lesson_match'] = int(max(is_lesson_matches))
+        unstuck_state['is_not_unit_match'] = ( 1 - int(min(is_unit_matches)))*int(is_topic_tree_avail)
+        unstuck_state['is_not_lesson_match'] = (1 - int(min(is_lesson_matches)))*int(is_topic_tree_avail)
         unstuck_state['topic_tree_avail_items'] = len(is_unit_matches)*int(is_topic_tree_avail) 
         unstuck_state['unit_match_items'] = sum(is_unit_matches)
         unstuck_state['lesson_match_items'] = sum(is_lesson_matches)
