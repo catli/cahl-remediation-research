@@ -57,7 +57,7 @@ def average_vectors_by_exercise(grouped_embeddings):
 def main():
     root_path = os.path.split(os.getcwd())[0] + '/'
     output_path = root_path + 'cahl_output' + '/'
-    read_file_affix = 'full'
+    read_file_affix = 'fullw10e30'
 
     response_vectors = read_embedding_vectors(root_path +
                             'cahl_output/embed_vectors_' +

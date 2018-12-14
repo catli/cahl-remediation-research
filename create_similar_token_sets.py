@@ -1,6 +1,5 @@
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
-from gensim.test.utils import common_texts, get_tmpfile, datapath
 import numpy as np
 import os
 # visualization 
@@ -32,7 +31,7 @@ class CreateSimilarityToken:
             sample_number):
         # find match between learning staste and response tokens
         if find_nearest_comparison == 'response':
-            match_tokens = self.generate_similarity_tokens(
+            match_tokens = generate_similarity_tokens(
                 method = method,
                 sample_number = sample_number,
                 target_vectors = self.learning_state_vectors,
@@ -41,7 +40,7 @@ class CreateSimilarityToken:
                 comparison_vectors = self.response_vectors,
                 comparison_tokens = self.response_tokens)
         elif find_nearest_comparison == 'learn':
-            match_tokens = self.generate_similarity_tokens(
+            match_tokens = generate_similarity_tokens(
                 method = method,
                 sample_number = sample_number,
                 target_vectors = self.learning_state_vectors,
@@ -51,7 +50,7 @@ class CreateSimilarityToken:
                 comparison_tokens = self.learning_state_tokens)
         elif find_nearest_comparison == 'response-response':        
         # find match between learning staste and response tokens
-            match_tokens = self.generate_similarity_tokens(
+            match_tokens = generate_similarity_tokens(
                 method = method,
                 sample_number = sample_number,
                 target_vectors = self.response_vectors,
@@ -62,28 +61,28 @@ class CreateSimilarityToken:
         
 
 
-    def generate_similarity_tokens(self, method, target_vectors, target_tokens,
-            comparison_vectors, comparison_tokens, sample_number):
-        '''
-        Input: Assume response vector and learning vector generated before
-            similarity calculated
-        Create generic function to find similar response token
-        Using either euclidean distance or cosine distance function
-        '''
-        response_similarity_tokens = []
-        similarity_loc = find_most_similar_item_between_vectors(method = method,
-                        num_loc = 100, 
-                        vectors_i = target_vectors,
-                        vectors_j = comparison_vectors)
-        for i, token in enumerate(target_tokens):
-            # for each token, identify the location of similarity token
-            vectors_most_similar_loc = similarity_loc[i]
-            # the loc specifies the location of the highest similarity
-            similar_token = sample_highest_similarity_token_excl_self(token,
-                comparison_tokens, vectors_most_similar_loc, method,
-                sample_number = sample_number)
-            response_similarity_tokens.append((token, similar_token))
-        return response_similarity_tokens
+def generate_similarity_tokens( method, target_vectors, target_tokens,
+    comparison_vectors, comparison_tokens, sample_number):
+    '''
+    Input: Assume response vector and learning vector generated before
+    similarity calculated
+    Create generic function to find similar response token
+    Using either euclidean distance or cosine distance function
+    '''
+    response_similarity_tokens = []
+    similarity_loc = find_most_similar_item_between_vectors(method = method,
+	    num_loc = 100, 
+	    vectors_i = target_vectors,
+	    vectors_j = comparison_vectors)
+    for i, token in enumerate(target_tokens):
+	# for each token, identify the location of similarity token
+	vectors_most_similar_loc = similarity_loc[i]
+	# the loc specifies the location of the highest similarity
+	similar_token = sample_highest_similarity_token_excl_self(token,
+	    comparison_tokens, vectors_most_similar_loc, method,
+	    sample_number = sample_number)
+	response_similarity_tokens.append((token, similar_token))
+    return response_similarity_tokens
 
 
 

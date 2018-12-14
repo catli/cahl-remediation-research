@@ -213,6 +213,42 @@ def read_tokens(file_name):
         response_tokens.append(clean_line.replace("'","").strip())
     return response_tokens
 
+def read_prerequisite_data(file_name, is_json_file=True):
+    '''
+        read in the prerequisite data
+        as a dictionary with the name of each target exercise
+        as the key and the list of prerequisite exercises as an array
+        example: {'multiplication':['addition','counting']}
+    '''
+    if is_json_file:
+        extension = '.json'
+    else:
+        extension = '.csv'
+
+    path = os.path.expanduser(file_name+extension)
+    reader = open(path,'r')
+
+    if is_json_file:
+        prerequisites = json.load(reader)
+    else:
+        prerequisites = load_prereq_csv_to_dictionary(reader)
+    return prerequisites
+
+
+def load_prereq_csv_to_dictionary(reader):
+    prerequisites = {}
+    for line in reader:
+        # split line by comma delimitation
+        splitline = line.strip().split(",")
+        try:
+            prerequisites[splitline[0]].append(splitline[1])
+        except KeyError:
+            # if key in dictionary not already created
+            prerequisites[splitline[0]] = [ splitline[1]]
+    return prerequisites
+
+
+
 def write_token_file(path, file_name, tokens):
     '''write individual tokens into flat file. Estimated time: 1.5 sec for 1M rows'''
     path = os.path.expanduser(path+file_name+'.csv')

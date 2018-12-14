@@ -1,19 +1,19 @@
 ,metric,total learners,total problems
-0,01-total learners ,17775,-
-1,02-tried a problems,17389,389111
-2,03-immediately mastered a problem ,15649,247938
-3,04-got stuck ever,15298,141173
-4,05-unable to unstuck,13718,83143
-5,06-attempted to unstuck,12569,97359
-6,07-able to unstuck,9832,58030
-7,08-unstuck exercise have prereq available,9563,55007
-8,09-prereq for unstuck exercise matches prereq,3349,12944
-9,10-unstuck remediation problems for unstuck exercise,9292,4142462
-10,11-unstuck remediation problems different exercise as stuck exercise,4914,3793430
-11,12-unstuck remediation problems answered correctly,8938,2649029
-12,13-unstuck remediation exericse in topic tree,9292,54869
-13,14-unstuck remediation at least one not in same unit,2381,13567
-14,15-unstuck remediation exercise at least one not in same lesson,3760,19156
-15,16-unstuck remediation problems for exercises in topic tree,9292,4142462
-16,17-unstuck remediation problems in same unit,9286,1562478
-17,18-unstuck remediation problems in same lesson,9274,751241
+0,01-total learners ,5850161,-
+1,02-tried a problems,5726004,110325498
+2,03-immediately mastered a problem ,5162594,77007723
+3,04-got stuck ever,5039702,80194575
+4,05-unable to unstuck,4530394,44681141
+5,06-attempted to unstuck,4149680,45128817
+6,07-able to unstuck,3239288,35513434
+7,08-unstuck exercise have prereq available,3142876,34827551
+8,09-prereq for unstuck exercise matches prereq,1129282,25412029
+9,10-unstuck remediation problems for unstuck exercise,3062036,284510348
+10,11-unstuck remediation problems different exercise as stuck exercise,1643564,217343098
+11,12-unstuck remediation problems answered correctly,2951934,181185290
+12,13-unstuck remediation exericse in topic tree,3062036,34750036
+13,14-unstuck remediation at least one not in same unit,835812,25123112
+14,15-unstuck remediation exercise at least one not in same lesson,1261189,26332981
+15,16-unstuck remediation problems for exercises in topic tree,3062036,284510348
+16,17-unstuck remediation problems in same unit,3060502,205548426
+17,18-unstuck remediation problems in same lesson,3054784,142242044
