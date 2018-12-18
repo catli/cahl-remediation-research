@@ -54,10 +54,10 @@ class SummarizeStuckness():
             'unstuck_is_not_lesson_match_problems',
             'unstuck_topic_tree_avail_remediation_items',
             'unstuck_unit_match_remediation_items',  
-            'unstuck_lesson_match_remediation_items',
+            'unstuck_lesson_match_remediation_items'
             #[stuck_prereq!]
-            'stuck_prereq_avail',
-            'stuck_prereq_match'
+            #'stuck_prereq_avail',
+            #'stuck_prereq_match'
             ])
     
     def parse_line(self, line, prerequisites, units, lessons, sessions=False):
@@ -109,7 +109,7 @@ class SummarizeStuckness():
         unstuck_problems = len(self.user_data['unstuck'].keys())
         reattempted_stuck_problems = unstuck_problems + self.count_reattempt_on_stuck()
         # [stuck_prereq!]
-        stuck_prereq_avail, stuck_prereq_match = self.count_prereq_use_on_stuck( prerequisites)
+        # stuck_prereq_avail, stuck_prereq_match = self.count_prereq_use_on_stuck( prerequisites)
         unstuck_different_exercise = 0
         unstuck_remediation_problems = 0 
         unstuck_correct_remdiation_problems = 0
@@ -151,10 +151,10 @@ class SummarizeStuckness():
             unstuck_is_not_lesson_match_problems , 
             unstuck_topic_tree_avail_remediation_items,
             unstuck_unit_match_remediation_items,  
-            unstuck_lesson_match_remediation_items,
+            unstuck_lesson_match_remediation_items
             #[stuck_prereq!]
-            stuck_prereq_avail, 
-            stuck_prereq_match
+            #stuck_prereq_avail, 
+            #stuck_prereq_match
             ])
         # clear user data 
         self.user_data = {'stuck':{},'unstuck':{}, 'never_stuck':[], 'stuck_correct':{}  }
@@ -375,15 +375,19 @@ def load_topic_tree_to_dict(topic_tree_reader):
 
 
 
-def main():
+def main(is_sessions=False):
     read_file = os.path.expanduser('~/sorted_data/khan_data_sorted.csv')
     print(read_file)
-    write_file = os.path.expanduser(
-            '~/cahl_output/summarize_stuckness_bysession_problemtype.csv')
+    # [bylearnerorsession]
+    if is_sessions:
+        write_path = '~/cahl_output/summarize_stuckness_bysessions_problemtype.csv'
+    else:
+        write_path = '~/cahl_output/summarize_stuckness_bylearner_problemtype.csv'
+    write_file = os.path.expanduser(write_path)
     stick = SummarizeStuckness(read_file, write_file)
     prerequisites = read_prerequisite_data('multilevel_prerequisites')
     units, lessons = read_topic_tree_data('math_topic_tree')
-    stick.iterate_through_lines(prerequisites, units, lessons, sessions=True)
+    stick.iterate_through_lines(prerequisites, units, lessons, sessions=is_sessions)
 
 if __name__ == '__main__':
     start = time.time() 
