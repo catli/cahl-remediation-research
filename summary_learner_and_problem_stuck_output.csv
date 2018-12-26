@@ -1,0 +1,8 @@
+,metric,learners,problems
+0,total number tried a problem (millions),21.587162,143.12337
+1,immediately mastered a problem,0.8448630255334165,0.6097384375451752
+2,ever got stuck out of those who get stuck,0.8343249566571095,0.3902615624548248
+3,never unstuck out of those who got stuck ever,0.8359412078636775,0.70684682184671
+4,reattemped out of those who got stuck ever,0.7551821394250576,0.5807327830448362
+5,able to unstuck out of those who unstuck,0.6650538383463719,0.5047987417143227
+6,remediated with prerequisite out of those with prereq avail,0.11348897295659385,0.0891454521076594

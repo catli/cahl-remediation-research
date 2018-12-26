@@ -54,10 +54,10 @@ class SummarizeStuckness():
             'unstuck_is_not_lesson_match_problems',
             'unstuck_topic_tree_avail_remediation_items',
             'unstuck_unit_match_remediation_items',  
-            'unstuck_lesson_match_remediation_items'
+            'unstuck_lesson_match_remediation_items',
             #[stuck_prereq!]
-            #'stuck_prereq_avail',
-            #'stuck_prereq_match'
+            'stuck_prereq_avail',
+            'stuck_prereq_match'
             ])
     
     def parse_line(self, line, prerequisites, units, lessons, sessions=False):
@@ -109,7 +109,7 @@ class SummarizeStuckness():
         unstuck_problems = len(self.user_data['unstuck'].keys())
         reattempted_stuck_problems = unstuck_problems + self.count_reattempt_on_stuck()
         # [stuck_prereq!]
-        # stuck_prereq_avail, stuck_prereq_match = self.count_prereq_use_on_stuck( prerequisites)
+        stuck_prereq_avail, stuck_prereq_match = self.count_prereq_use_on_stuck( prerequisites)
         unstuck_different_exercise = 0
         unstuck_remediation_problems = 0 
         unstuck_correct_remdiation_problems = 0
@@ -123,7 +123,7 @@ class SummarizeStuckness():
         unstuck_lesson_match_remediation_items = 0  
         for unstuck_item in self.user_data['unstuck']:
             unstuck_array = self.user_data['unstuck'][unstuck_item] 
-            unstuck_different_exercise += unstuck_array['different_exercise_remediation_problems']
+            unstuck_different_exercise += (unstuck_array['different_exercise_remediation_problems']>0)
             unstuck_remediation_problems += unstuck_array['remediation_problems']
             unstuck_correct_remdiation_problems += unstuck_array['correct_remediation_problems']
             unstuck_prereq_avail_problems += unstuck_array['is_prereqs_available']  
@@ -151,10 +151,10 @@ class SummarizeStuckness():
             unstuck_is_not_lesson_match_problems , 
             unstuck_topic_tree_avail_remediation_items,
             unstuck_unit_match_remediation_items,  
-            unstuck_lesson_match_remediation_items
+            unstuck_lesson_match_remediation_items,
             #[stuck_prereq!]
-            #stuck_prereq_avail, 
-            #stuck_prereq_match
+            stuck_prereq_avail, 
+            stuck_prereq_match
             ])
         # clear user data 
         self.user_data = {'stuck':{},'unstuck':{}, 'never_stuck':[], 'stuck_correct':{}  }
@@ -375,7 +375,7 @@ def load_topic_tree_to_dict(topic_tree_reader):
 
 
 
-def main(is_sessions=False):
+def main(is_sessions=True):
     read_file = os.path.expanduser('~/sorted_data/khan_data_sorted.csv')
     print(read_file)
     # [bylearnerorsession]

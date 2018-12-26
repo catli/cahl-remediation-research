@@ -1,19 +1,20 @@
 ,metric,total learners,total problems
-0,01-total learners ,22223353,-
-1,02-tried a problems,21587162,143123370
-2,03-immediately mastered a problem ,18238195,87267820
-3,04-got stuck ever,18010708,55855550
-4,05-unable to unstuck,15055893,39481318
-5,06-attempted to unstuck,13601365,32437149
-6,07-able to unstuck,9045640,16374232
-7,08-unstuck exercise have prereq available,8646470,15438690
-8,09-prereq for unstuck exercise matches prereq,981279,1376289
-9,10-unstuck remediation problems for unstuck exercise,8289736,138049239
-10,11-unstuck remediation problems different exercise as stuck exercise,2118475,59050203
-11,12-unstuck remediation problems answered correctly,7790682,76435567
-12,13-unstuck remediation exericse in topic tree,8289736,15049852
-13,14-unstuck remediation at least one not in same unit,760121,1071156
-14,15-unstuck remediation exercise at least one not in same lesson,1406887,2108075
-15,16-unstuck remediation problems for exercises in topic tree,8289736,138049239
-16,17-unstuck remediation problems in same unit,8272261,122959156
-17,18-unstuck remediation problems in same lesson,8247374,101646402
+0,00-millions,1000000,1000000
+1,01-total learners,22223353,-
+2,02-tried a problems,21587162,143123370
+3,03-immediately mastered a problem,18238195,87267820
+4,04-got stuck ever,18010708,55855550
+5,05-unable to unstuck,15055893,39481318
+6,06-attempted to unstuck,13601365,32437149
+7,07-able to unstuck,9045640,16374232
+8,08-unstuck exercise have prereq available,8646470,15438690
+9,09-prereq for unstuck exercise matches prereq,981279,1376289
+10,10-unstuck remediation problems for unstuck exercise,8289736,138049239
+11,11-unstuck remediation problems different exercise as stuck exercise,2118475,59050203
+12,12-unstuck remediation problems answered correctly,7790682,76435567
+13,13-unstuck remediation exericse in topic tree,8289736,15049852
+14,14-unstuck remediation at least one not in same unit,760121,1071156
+15,15-unstuck remediation exercise at least one not in same lesson,1406887,2108075
+16,16-unstuck remediation problems for exercises in topic tree,8289736,138049239
+17,17-unstuck remediation problems in same unit,8272261,122959156
+18,18-unstuck remediation problems in same lesson,8247374,101646402
