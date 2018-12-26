@@ -1,2 +1,2 @@
 # cahl_remediation_research
-Applying NLP model to train remediation model 
+The goal of this project is to see if NLP models can be applied to exercise learning to recommend exercises for learners stuck. The model trains on exercise data for individual learning sessions on Khan Academy.  
